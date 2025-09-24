@@ -1,25 +1,26 @@
-# .github/workflows/ci.yml
-
 name: CI Build and Test
 
-# Controls when the workflow will run
 on:
-  # Triggers the workflow on every push or pull request (all branches) so CI runs after every commit
-  push: {}
-  pull_request: {}
-
-  # Allows you to run this workflow manually from the Actions tab
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
   workflow_dispatch:
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
-    # Service containers to run with the job
+    env:
+      DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/ci_sight_test"
+      REDIS_URL: "redis://localhost:6379"
+      NODE_ENV: test
+
     services:
       postgres:
         image: pgvector/pgvector:pg16
-        # Set health checks to wait until the container is ready
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -27,8 +28,6 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
-        # Provide the same environment variables as your docker-compose file
-        # Using a separate test database is a good practice
         environment:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -45,58 +44,44 @@ jobs:
           - 6379:6379
 
     steps:
-      # 1. Checkout the repository code
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Set up Node.js environment (matching your Dockerfile)
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm' # Cache npm dependencies for faster runs
+          cache: 'npm'
 
-      # 3. Set up Python environment (matching your Dockerfile)
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10' # Specify a version, e.g., 3.10
-          cache: 'pip' # Cache pip dependencies
+          python-version: '3.10'
+          cache: 'pip'
 
-      # 4. Install all project dependencies
       - name: Install dependencies
         run: |
           npm install
           pip install -r ml/requirements.txt
-          # The Dockerfile installs these separately, so we do the same
-          # Using --prefix is a clean way to target subdirectories
           npm install --prefix client
           npm install --prefix server
 
-      # 5. Apply database migrations
+      - name: Scan for vulnerabilities
+        run: |
+          npm audit --prefix client --audit-level=high
+          npm audit --prefix server --audit-level=high
+
       - name: Apply database migrations
-        # The service containers are available on localhost within the runner
-        env:
-          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/ci_sight_test"
         run: npx prisma migrate deploy --schema=./server/prisma/schema.prisma
 
-      # 6. Build client and server to ensure they compile
-      - name: Build project
+      - name: Build client and server
         run: |
           npm run build --prefix client
           npm run build --prefix server
 
-      # 7. Run Jest unit tests
-      - name: Run unit tests
+      - name: Run server tests
         env:
-          # Provide all necessary environment variables for the test suite
-          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/ci_sight_test"
-          REDIS_URL: "redis://localhost:6379"
-          NODE_ENV: test
-          # Provide dummy secrets for testing purposes
           SESSION_JWT_SECRET: "test-secret"
-          TOKEN_ENCRYPTION_KEY: "a0a1a2a3a4a5a6a7a8a9a0a1a2a3a4a5a6a7a8a9a0a1a2a3a4a5a6a7a8a9a0a1" # Must be 32 bytes (64 hex)
+          TOKEN_ENCRYPTION_KEY: "a0a1a2a3a4a5a6a7a8a9a0a1a2a3a4a5a6a7a8a9a0a1a2a3a4a5a6a7a8a9a0a1"
           GITHUB_WEBHOOK_SECRET: "test-webhook-secret"
-  # Run server tests explicitly (there is no root-level `test` script). This mirrors how the
-  # repository organizes tests under `server`.
-  run: npm test --prefix server
+        run: npm test --prefix server
