@@ -21,14 +21,32 @@ export class CryptoService {
 
   // Derive or parse a 32-byte key from configured value.
   private getKey(): Buffer {
-    const rawKey = config.TOKEN_ENCRYPTION_KEY;
-    // A 32-byte key is required for aes-256. Base64 encoding is a good way to store it.
-    const keyFromBase64 = Buffer.from(rawKey, 'base64');
-    if (keyFromBase64.length === 32) {
+    const rawKey = config.TOKEN_ENCRYPTION_KEY || '';
+
+    // Validate that the configured key is a valid base64 string and decodes to 32 bytes.
+    // Base64 for 32 bytes is typically 44 characters including padding, but we'll decode
+    // and check the resulting length to be robust.
+    let keyFromBase64: Buffer | null = null;
+    try {
+      // Quick sanity: only allow base64 charset characters and optional padding
+      // This prevents Buffer.from from silently accepting other encodings.
+      const base64Regex = /^[A-Za-z0-9+/]+={0,2}$/;
+      if (base64Regex.test(rawKey)) {
+        keyFromBase64 = Buffer.from(rawKey, 'base64');
+      }
+    } catch (err) {
+      keyFromBase64 = null;
+    }
+
+    if (keyFromBase64 && keyFromBase64.length === 32) {
       return keyFromBase64;
     }
-    // Non-32-byte keys are tolerated by deriving a SHA-256 digest.
-    logger.warn('TOKEN_ENCRYPTION_KEY is not a 32-byte base64 string. Deriving key using SHA-256. This is not recommended for production.');
+
+    // Non-32-byte or invalid base64 keys are tolerated by deriving a SHA-256 digest.
+    logger.warn(
+      'TOKEN_ENCRYPTION_KEY is not a 32-byte base64 string. Deriving key using SHA-256. This is not recommended for production.'
+    );
+
     return crypto.createHash('sha256').update(rawKey).digest();
   }
 

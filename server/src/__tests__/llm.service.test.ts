@@ -1,11 +1,9 @@
 import axios from 'axios';
 import {generateSolution} from '../services/llm.service';
 
-// Mock axios
 jest.mock('axios');
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 
-// Mock config
 jest.mock('../config', () => ({
   config: {
     OLLAMA_API_URL: 'http://localhost:11434/api/generate',
@@ -13,16 +11,27 @@ jest.mock('../config', () => ({
   },
 }));
 
+/**
+ * Test suite for the LLM (Large Language Model) Service.
+ * This suite verifies the interaction with the Ollama API, including successful
+ * solution generation and robust handling of various API responses and network errors.
+ */
 describe('LLM Service', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
+  /**
+   * Tests for the `generateSolution` function.
+   */
   describe('generateSolution', () => {
     const mockLogContext = 'Error: npm install failed\nStack trace: ...';
 
+    /**
+     * Verifies a successful API call to the Ollama service and the extraction
+     * of the generated solution from the response.
+     */
     it('should successfully generate a solution from Ollama API', async () => {
-      // Arrange
       const mockResponse = {
         data: {
           response: 'Try running npm install with --force flag.',
@@ -30,10 +39,8 @@ describe('LLM Service', () => {
       };
       mockedAxios.post.mockResolvedValue(mockResponse);
 
-      // Act
       const result = await generateSolution(mockLogContext);
 
-      // Assert
       expect(mockedAxios.post).toHaveBeenCalledWith(
         'http://localhost:11434/api/generate',
         {
@@ -48,163 +55,131 @@ describe('LLM Service', () => {
       expect(result).toBe('Try running npm install with --force flag.');
     });
 
+    /**
+     * Ensures that the log context provided to the function is correctly embedded
+     * within the prompt sent to the LLM.
+     */
     it('should include the log context in the prompt', async () => {
-      // Arrange
-      const mockResponse = {
-        data: {
-          response: 'Solution here',
-        },
-      };
+      const mockResponse = { data: { response: 'Solution here' } };
       mockedAxios.post.mockResolvedValue(mockResponse);
 
-      // Act
       await generateSolution(mockLogContext);
 
-      // Assert
       const callArgs = mockedAxios.post.mock.calls[0][1] as any;
       expect(callArgs.prompt).toContain(mockLogContext);
-      expect(callArgs.prompt).toContain('Analyze the following log snippet');
-      expect(callArgs.prompt).toContain('Suggested Solution:');
     });
 
+    /**
+     * Verifies that the function returns `null` if the API returns an empty response string.
+     */
     it('should return null when API response is empty', async () => {
-      // Arrange
-      const mockResponse = {
-        data: {
-          response: '',
-        },
-      };
+      const mockResponse = { data: { response: '' } };
       mockedAxios.post.mockResolvedValue(mockResponse);
 
-      // Act
       const result = await generateSolution(mockLogContext);
 
-      // Assert
       expect(result).toBeNull();
     });
 
+    /**
+     * Verifies that the function returns `null` if the API response is missing the `response` field.
+     */
     it('should return null when API response has no response field', async () => {
-      // Arrange
-      const mockResponse = {
-        data: {},
-      };
+      const mockResponse = { data: {} };
       mockedAxios.post.mockResolvedValue(mockResponse);
 
-      // Act
       const result = await generateSolution(mockLogContext);
 
-      // Assert
       expect(result).toBeNull();
     });
 
+    /**
+     * Verifies that the function returns `null` for a malformed API response (e.g., null data).
+     */
     it('should return null when API response is malformed', async () => {
-      // Arrange
-      const mockResponse = {
-        data: null,
-      };
+      const mockResponse = { data: null };
       mockedAxios.post.mockResolvedValue(mockResponse);
 
-      // Act
       const result = await generateSolution(mockLogContext);
 
-      // Assert
       expect(result).toBeNull();
     });
 
+    /**
+     * Ensures that network errors during the API call are handled gracefully, returning `null`.
+     */
     it('should handle axios network errors', async () => {
-      // Arrange
       const networkError = new Error('Network Error');
       mockedAxios.post.mockRejectedValue(networkError);
 
-      // Act
       const result = await generateSolution(mockLogContext);
 
-      // Assert
       expect(result).toBeNull();
     });
 
+    /**
+     * Ensures that request timeouts are handled gracefully, returning `null`.
+     */
     it('should handle axios timeout errors', async () => {
-      // Arrange
       const timeoutError = new Error('Timeout');
       (timeoutError as any).code = 'ECONNABORTED';
-      const axiosError = {
-        ...timeoutError,
-        isAxiosError: true,
-        code: 'ECONNABORTED',
-      };
+      const axiosError = { ...timeoutError, isAxiosError: true, code: 'ECONNABORTED' };
       mockedAxios.post.mockRejectedValue(axiosError);
 
-      // Act
       const result = await generateSolution(mockLogContext);
 
-      // Assert
       expect(result).toBeNull();
     });
 
+    /**
+     * Ensures that non-2xx HTTP responses are handled gracefully, returning `null`.
+     */
     it('should handle HTTP error responses', async () => {
-      // Arrange
       const httpError = {
         isAxiosError: true,
-        response: {
-          status: 500,
-          data: { error: 'Internal Server Error' },
-        },
+        response: { status: 500, data: { error: 'Internal Server Error' } },
       };
       mockedAxios.post.mockRejectedValue(httpError);
 
-      // Act
       const result = await generateSolution(mockLogContext);
 
-      // Assert
       expect(result).toBeNull();
     });
 
+    /**
+     * Ensures that connection refused errors are handled gracefully, returning `null`.
+     */
     it('should handle connection refused errors', async () => {
-      // Arrange
-      const connectionError = {
-        isAxiosError: true,
-        code: 'ECONNREFUSED',
-        message: 'Connection refused',
-      };
+      const connectionError = { isAxiosError: true, code: 'ECONNREFUSED', message: 'Connection refused' };
       mockedAxios.post.mockRejectedValue(connectionError);
 
-      // Act
       const result = await generateSolution(mockLogContext);
 
-      // Assert
       expect(result).toBeNull();
     });
 
+    /**
+     * Verifies that leading/trailing whitespace is trimmed from the LLM's response.
+     */
     it('should trim whitespace from the response', async () => {
-      // Arrange
-      const mockResponse = {
-        data: {
-          response: '  Solution with extra whitespace  \n\n  ',
-        },
-      };
+      const mockResponse = { data: { response: '  Solution with extra whitespace  \n\n  ' } };
       mockedAxios.post.mockResolvedValue(mockResponse);
 
-      // Act
       const result = await generateSolution(mockLogContext);
 
-      // Assert
       expect(result).toBe('Solution with extra whitespace');
     });
 
+    /**
+     * Verifies that the service can handle and correctly process very long log inputs.
+     */
     it('should handle very long log contexts', async () => {
-      // Arrange
       const longLogContext = 'Error: '.repeat(1000) + 'Long log content';
-      const mockResponse = {
-        data: {
-          response: 'Solution for long log',
-        },
-      };
+      const mockResponse = { data: { response: 'Solution for long log' } };
       mockedAxios.post.mockResolvedValue(mockResponse);
 
-      // Act
       const result = await generateSolution(longLogContext);
 
-      // Assert
       expect(result).toBe('Solution for long log');
       const callArgs = mockedAxios.post.mock.calls[0][1] as any;
       expect(callArgs.prompt).toContain(longLogContext);

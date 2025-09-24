@@ -5,7 +5,6 @@ import {GithubService} from '../services/github.service';
 import {prisma} from '../db';
 import {config} from '../config';
 
-// Mock dependencies
 jest.mock('../modules/auth/auth.service');
 jest.mock('../services/crypto.service');
 jest.mock('../services/github.service');
@@ -29,6 +28,11 @@ const MockedCryptoService = CryptoService as jest.MockedClass<typeof CryptoServi
 const MockedGithubService = GithubService as jest.MockedClass<typeof GithubService>;
 const mockedPrisma = prisma as jest.Mocked<typeof prisma>;
 
+/**
+ * Test suite for the AuthController.
+ * This suite verifies the functionality of authentication-related endpoints,
+ * including GitHub OAuth flow, session management, and user data retrieval.
+ */
 describe('AuthController', () => {
   let authController: AuthController;
   let mockAuthService: jest.Mocked<AuthService>;
@@ -52,18 +56,22 @@ describe('AuthController', () => {
     jest.clearAllMocks();
   });
 
+  /**
+   * Tests for the GitHub login initiation endpoint.
+   */
   describe('githubLogin', () => {
+    /**
+     * Verifies that the controller correctly generates state, sets a cookie,
+     * and redirects the user to the GitHub authorization URL.
+     */
     it('should redirect to GitHub OAuth URL', () => {
-      // Arrange
       const mockState = 'random-state';
       const mockAuthUrl = 'https://github.com/login/oauth/authorize?params';
       mockAuthService.generateAuthState.mockReturnValue(mockState);
       mockAuthService.getGithubAuthUrl.mockReturnValue(mockAuthUrl);
 
-      // Act
       authController.githubLogin(mockReq, mockRes);
 
-      // Assert
       expect(mockAuthService.generateAuthState).toHaveBeenCalled();
       expect(mockAuthService.getGithubAuthUrl).toHaveBeenCalledWith(
         'https://frontend.com/api/auth/github/callback',
@@ -81,31 +89,36 @@ describe('AuthController', () => {
       expect(mockRes.redirect).toHaveBeenCalledWith(mockAuthUrl);
     });
 
+    /**
+     * Ensures the 'secure' flag is set on cookies in a production environment.
+     */
     it('should set secure cookie in production', () => {
-      // Arrange
       const originalEnv = config.NODE_ENV;
       (config as any).NODE_ENV = 'production';
       mockAuthService.generateAuthState.mockReturnValue('state');
       mockAuthService.getGithubAuthUrl.mockReturnValue('url');
 
-      // Act
       authController.githubLogin(mockReq, mockRes);
 
-      // Assert
       expect(mockRes.cookie).toHaveBeenCalledWith(
         'oauth_state',
         'state',
         expect.objectContaining({ secure: true })
       );
 
-      // Cleanup
       (config as any).NODE_ENV = originalEnv;
     });
   });
 
+  /**
+   * Tests for the GitHub OAuth callback endpoint.
+   */
   describe('githubCallback', () => {
+    /**
+     * Verifies the successful handling of a valid OAuth callback, including
+     * token exchange, user creation, session creation, and redirection.
+     */
     it('should handle successful OAuth callback', async () => {
-      // Arrange
       mockReq.query = { code: 'auth-code', state: 'valid-state' };
       mockReq.cookies = { oauth_state: 'valid-state' };
       const mockToken = 'github-token';
@@ -116,10 +129,8 @@ describe('AuthController', () => {
       mockAuthService.findOrCreateUser.mockResolvedValue(mockUser as any);
       mockAuthService.createJwtForUser.mockReturnValue(mockJwt);
 
-      // Act
       await authController.githubCallback(mockReq, mockRes);
 
-      // Assert
       expect(mockAuthService.exchangeCodeForToken).toHaveBeenCalledWith(
         'auth-code',
         'https://frontend.com/api/auth/github/callback'
@@ -139,58 +150,67 @@ describe('AuthController', () => {
       expect(mockRes.redirect).toHaveBeenCalledWith('https://frontend.com');
     });
 
+    /**
+     * Ensures a 400 Bad Request response if required query parameters are missing.
+     */
     it('should return 400 for missing parameters', async () => {
-      // Arrange
       mockReq.query = {};
       mockReq.cookies = {};
 
-      // Act
       await authController.githubCallback(mockReq, mockRes);
 
-      // Assert
       expect(mockRes.status).toHaveBeenCalledWith(400);
       expect(mockRes.send).toHaveBeenCalledWith('Authentication error: Missing required parameters.');
     });
 
+    /**
+     * Ensures a 400 Bad Request response if the OAuth state parameter is invalid,
+     * preventing CSRF attacks.
+     */
     it('should return 400 for invalid state', async () => {
-      // Arrange
       mockReq.query = { code: 'code', state: 'invalid' };
       mockReq.cookies = { oauth_state: 'valid' };
 
-      // Act
       await authController.githubCallback(mockReq, mockRes);
 
-      // Assert
       expect(mockRes.status).toHaveBeenCalledWith(400);
       expect(mockRes.send).toHaveBeenCalledWith('Invalid state parameter. Request aborted for security reasons.');
     });
 
+    /**
+     * Verifies that errors during the OAuth token exchange are handled gracefully
+     * and result in a 500 Internal Server Error response.
+     */
     it('should handle OAuth errors', async () => {
-      // Arrange
       mockReq.query = { code: 'code', state: 'state' };
       mockReq.cookies = { oauth_state: 'state' };
       mockAuthService.exchangeCodeForToken.mockRejectedValue(new Error('OAuth failed'));
 
-      // Act
       await authController.githubCallback(mockReq, mockRes);
 
-      // Assert
       expect(mockRes.status).toHaveBeenCalledWith(500);
       expect(mockRes.send).toHaveBeenCalledWith('An internal server error occurred during authentication.');
     });
   });
 
+  /**
+   * Tests for the endpoint that retrieves the currently authenticated user.
+   */
   describe('getCurrentUser', () => {
+    /**
+     * Verifies that the endpoint returns a null user when no session is active.
+     */
     it('should return null when no user in request', async () => {
-      // Act
       await authController.getCurrentUser(mockReq, mockRes);
 
-      // Assert
       expect(mockRes.json).toHaveBeenCalledWith({ user: null });
     });
 
+    /**
+     * Verifies that the endpoint returns the correct user data for an authenticated session.
+     * It also checks that the PAT status is correctly represented.
+     */
     it('should return user data when user exists', async () => {
-      // Arrange
       mockReq.user = { id: 1 };
       const mockUser = {
         id: 1,
@@ -201,10 +221,8 @@ describe('AuthController', () => {
       };
       (mockedPrisma.user.findUnique as jest.Mock).mockResolvedValue(mockUser as any);
 
-      // Act
       await authController.getCurrentUser(mockReq, mockRes);
 
-      // Assert
       expect(mockedPrisma.user.findUnique).toHaveBeenCalledWith({
         where: { id: 1 },
         select: { id: true, login: true, name: true, avatarUrl: true, githubPat: true },
@@ -221,43 +239,51 @@ describe('AuthController', () => {
     });
   });
 
+  /**
+   * Tests for the user logout endpoint.
+   */
   describe('logout', () => {
+    /**
+     * Verifies that the logout process correctly clears the session cookie
+     * and sends a successful response.
+     */
     it('should clear session cookie and respond', () => {
-      // Act
       authController.logout(mockReq, mockRes);
 
-      // Assert
       expect(mockRes.clearCookie).toHaveBeenCalledWith('session', { path: '/' });
       expect(mockRes.status).toHaveBeenCalledWith(200);
       expect(mockRes.json).toHaveBeenCalledWith({ message: 'Logged out successfully' });
     });
   });
 
+  /**
+   * Tests for the endpoint that updates a user's GitHub Personal Access Token.
+   */
   describe('updateGithubPat', () => {
+    /**
+     * Verifies the successful update of a user's PAT.
+     */
     it('should update PAT successfully', async () => {
-      // Arrange
       mockReq.body = { pat: 'ghp_validtoken123' };
       mockReq.user = { id: 1 };
       const mockUpdatedUser = { id: 1, githubPat: 'encrypted' };
       mockAuthService.updateUserPat.mockResolvedValue(mockUpdatedUser as any);
 
-      // Act
       await authController.updateGithubPat(mockReq, mockRes);
 
-      // Assert
       expect(mockAuthService.updateUserPat).toHaveBeenCalledWith(1, 'ghp_validtoken123');
       expect(mockRes.status).toHaveBeenCalledWith(200);
       expect(mockRes.json).toHaveBeenCalledWith({ message: 'Token updated successfully.' });
     });
 
+    /**
+     * Ensures that tokens with an invalid format are rejected with a 400 Bad Request.
+     */
     it('should return 400 for invalid PAT format', async () => {
-      // Arrange
       mockReq.body = { pat: 'invalid-token' };
 
-      // Act
       await authController.updateGithubPat(mockReq, mockRes);
 
-      // Assert
       expect(mockRes.status).toHaveBeenCalledWith(400);
       expect(mockRes.json).toHaveBeenCalledWith({ error: 'Invalid GitHub Personal Access Token format.' });
     });
