@@ -1,29 +1,35 @@
 import {config} from '../config';
 
-// Mock dotenv to prevent loading actual .env file
 jest.mock('dotenv', () => ({
   config: jest.fn(),
 }));
 
-// Mock process.env
 const originalEnv = process.env;
 
+/**
+ * Test suite for application configuration validation.
+ * This suite verifies that the configuration module correctly parses, validates,
+ * and provides default values for environment variables. It uses `jest.resetModules`
+ * to force the config module to be re-evaluated for each test case.
+ */
 describe('Config Validation', () => {
   beforeEach(() => {
-    // Reset process.env before each test
     process.env = {};
-    // Clear the module cache to force re-import
     jest.resetModules();
   });
 
   afterAll(() => {
-    // Restore original process.env
     process.env = originalEnv;
   });
 
+  /**
+   * Tests the successful parsing of a complete and valid set of environment variables.
+   */
   describe('successful parsing with valid environment variables', () => {
+    /**
+     * Verifies that all required and optional environment variables are parsed correctly.
+     */
     it('should parse all required environment variables successfully', () => {
-      // Arrange
       process.env = {
         NODE_ENV: 'development',
         PORT: '4000',
@@ -43,7 +49,6 @@ describe('Config Validation', () => {
         PYTHON_EXECUTABLE: 'python3',
       };
 
-      // Act & Assert - re-import to get fresh config
       const { config: freshConfig } = require('../config');
 
       expect(freshConfig.NODE_ENV).toBe('development');
@@ -64,8 +69,10 @@ describe('Config Validation', () => {
       expect(freshConfig.PYTHON_EXECUTABLE).toBe('python3');
     });
 
+    /**
+     * Verifies that default values are applied correctly when optional variables are omitted.
+     */
     it('should use default values when optional variables are not provided', () => {
-      // Arrange
       process.env = {
         FRONTEND_URL: 'http://localhost:3000',
         PUBLIC_URL: 'http://localhost:4000',
@@ -77,7 +84,6 @@ describe('Config Validation', () => {
         GITHUB_OAUTH_CLIENT_SECRET: 'test-client-secret',
       };
 
-      // Act & Assert
       const { config: freshConfig } = require('../config');
 
       expect(freshConfig.NODE_ENV).toBe('development');
@@ -89,8 +95,11 @@ describe('Config Validation', () => {
       expect(freshConfig.PYTHON_EXECUTABLE).toBe('python3');
     });
 
+    /**
+     * Verifies that string values from `process.env` are correctly coerced into
+     * numbers and booleans where appropriate.
+     */
     it('should handle type coercion correctly', () => {
-      // Arrange
       process.env = {
         FRONTEND_URL: 'http://localhost:3000',
         PUBLIC_URL: 'http://localhost:4000',
@@ -100,12 +109,11 @@ describe('Config Validation', () => {
         GITHUB_WEBHOOK_SECRET: 'c'.repeat(16),
         GITHUB_OAUTH_CLIENT_ID: 'test-client-id',
         GITHUB_OAUTH_CLIENT_SECRET: 'test-client-secret',
-        PORT: '3000', // String that should be coerced to number
-        USE_REDIS: 'true', // String that should be coerced to boolean
-        DEV_SEED: 'true', // String that should be coerced to boolean
+        PORT: '3000',
+        USE_REDIS: 'true',
+        DEV_SEED: 'true',
       };
 
-      // Act & Assert
       const { config: freshConfig } = require('../config');
 
       expect(freshConfig.PORT).toBe(3000);
@@ -117,9 +125,11 @@ describe('Config Validation', () => {
     });
   });
 
+  /**
+   * Verifies that the application fails to start if required variables are missing.
+   */
   describe('error handling for missing required variables', () => {
     it('should throw error when FRONTEND_URL is missing', () => {
-      // Arrange
       process.env = {
         PUBLIC_URL: 'http://localhost:4000',
         DATABASE_URL: 'postgresql://user:pass@localhost:5432/db',
@@ -129,15 +139,10 @@ describe('Config Validation', () => {
         GITHUB_OAUTH_CLIENT_ID: 'test-client-id',
         GITHUB_OAUTH_CLIENT_SECRET: 'test-client-secret',
       };
-
-      // Act & Assert
-      expect(() => {
-        require('../config');
-      }).toThrow(/FRONTEND_URL/);
+      expect(() => require('../config')).toThrow(/FRONTEND_URL/);
     });
 
     it('should throw error when PUBLIC_URL is missing', () => {
-      // Arrange
       process.env = {
         FRONTEND_URL: 'http://localhost:3000',
         DATABASE_URL: 'postgresql://user:pass@localhost:5432/db',
@@ -147,15 +152,10 @@ describe('Config Validation', () => {
         GITHUB_OAUTH_CLIENT_ID: 'test-client-id',
         GITHUB_OAUTH_CLIENT_SECRET: 'test-client-secret',
       };
-
-      // Act & Assert
-      expect(() => {
-        require('../config');
-      }).toThrow(/PUBLIC_URL/);
+      expect(() => require('../config')).toThrow(/PUBLIC_URL/);
     });
 
     it('should throw error when DATABASE_URL is missing', () => {
-      // Arrange
       process.env = {
         FRONTEND_URL: 'http://localhost:3000',
         PUBLIC_URL: 'http://localhost:4000',
@@ -165,15 +165,10 @@ describe('Config Validation', () => {
         GITHUB_OAUTH_CLIENT_ID: 'test-client-id',
         GITHUB_OAUTH_CLIENT_SECRET: 'test-client-secret',
       };
-
-      // Act & Assert
-      expect(() => {
-        require('../config');
-      }).toThrow(/DATABASE_URL/);
+      expect(() => require('../config')).toThrow(/DATABASE_URL/);
     });
 
     it('should throw error when SESSION_JWT_SECRET is missing', () => {
-      // Arrange
       process.env = {
         FRONTEND_URL: 'http://localhost:3000',
         PUBLIC_URL: 'http://localhost:4000',
@@ -183,15 +178,10 @@ describe('Config Validation', () => {
         GITHUB_OAUTH_CLIENT_ID: 'test-client-id',
         GITHUB_OAUTH_CLIENT_SECRET: 'test-client-secret',
       };
-
-      // Act & Assert
-      expect(() => {
-        require('../config');
-      }).toThrow(/SESSION_JWT_SECRET/);
+      expect(() => require('../config')).toThrow(/SESSION_JWT_SECRET/);
     });
 
     it('should throw error when TOKEN_ENCRYPTION_KEY is missing', () => {
-      // Arrange
       process.env = {
         FRONTEND_URL: 'http://localhost:3000',
         PUBLIC_URL: 'http://localhost:4000',
@@ -201,15 +191,10 @@ describe('Config Validation', () => {
         GITHUB_OAUTH_CLIENT_ID: 'test-client-id',
         GITHUB_OAUTH_CLIENT_SECRET: 'test-client-secret',
       };
-
-      // Act & Assert
-      expect(() => {
-        require('../config');
-      }).toThrow(/TOKEN_ENCRYPTION_KEY/);
+      expect(() => require('../config')).toThrow(/TOKEN_ENCRYPTION_KEY/);
     });
 
     it('should throw error when GITHUB_WEBHOOK_SECRET is missing', () => {
-      // Arrange
       process.env = {
         FRONTEND_URL: 'http://localhost:3000',
         PUBLIC_URL: 'http://localhost:4000',
@@ -219,15 +204,10 @@ describe('Config Validation', () => {
         GITHUB_OAUTH_CLIENT_ID: 'test-client-id',
         GITHUB_OAUTH_CLIENT_SECRET: 'test-client-secret',
       };
-
-      // Act & Assert
-      expect(() => {
-        require('../config');
-      }).toThrow(/GITHUB_WEBHOOK_SECRET/);
+      expect(() => require('../config')).toThrow(/GITHUB_WEBHOOK_SECRET/);
     });
 
     it('should throw error when GITHUB_OAUTH_CLIENT_ID is missing', () => {
-      // Arrange
       process.env = {
         FRONTEND_URL: 'http://localhost:3000',
         PUBLIC_URL: 'http://localhost:4000',
@@ -237,15 +217,10 @@ describe('Config Validation', () => {
         GITHUB_WEBHOOK_SECRET: 'c'.repeat(16),
         GITHUB_OAUTH_CLIENT_SECRET: 'test-client-secret',
       };
-
-      // Act & Assert
-      expect(() => {
-        require('../config');
-      }).toThrow(/GITHUB_OAUTH_CLIENT_ID/);
+      expect(() => require('../config')).toThrow(/GITHUB_OAUTH_CLIENT_ID/);
     });
 
     it('should throw error when GITHUB_OAUTH_CLIENT_SECRET is missing', () => {
-      // Arrange
       process.env = {
         FRONTEND_URL: 'http://localhost:3000',
         PUBLIC_URL: 'http://localhost:4000',
@@ -255,232 +230,86 @@ describe('Config Validation', () => {
         GITHUB_WEBHOOK_SECRET: 'c'.repeat(16),
         GITHUB_OAUTH_CLIENT_ID: 'test-client-id',
       };
-
-      // Act & Assert
-      expect(() => {
-        require('../config');
-      }).toThrow(/GITHUB_OAUTH_CLIENT_SECRET/);
+      expect(() => require('../config')).toThrow(/GITHUB_OAUTH_CLIENT_SECRET/);
     });
   });
 
+  /**
+   * Verifies that specific validation rules (e.g., URL format, secret length) are enforced.
+   */
   describe('error handling for invalid values', () => {
-    it('should throw error for invalid NODE_ENV', () => {
-      // Arrange
-      process.env = {
-        NODE_ENV: 'invalid-env',
-        FRONTEND_URL: 'http://localhost:3000',
-        PUBLIC_URL: 'http://localhost:4000',
-        DATABASE_URL: 'postgresql://user:pass@localhost:5432/db',
-        SESSION_JWT_SECRET: 'a'.repeat(32),
-        TOKEN_ENCRYPTION_KEY: 'b'.repeat(32),
-        GITHUB_WEBHOOK_SECRET: 'c'.repeat(16),
-        GITHUB_OAUTH_CLIENT_ID: 'test-client-id',
-        GITHUB_OAUTH_CLIENT_SECRET: 'test-client-secret',
-      };
+    const baseValidEnv = {
+      FRONTEND_URL: 'http://localhost:3000',
+      PUBLIC_URL: 'http://localhost:4000',
+      DATABASE_URL: 'postgresql://user:pass@localhost:5432/db',
+      SESSION_JWT_SECRET: 'a'.repeat(32),
+      TOKEN_ENCRYPTION_KEY: 'b'.repeat(32),
+      GITHUB_WEBHOOK_SECRET: 'c'.repeat(16),
+      GITHUB_OAUTH_CLIENT_ID: 'test-client-id',
+      GITHUB_OAUTH_CLIENT_SECRET: 'test-client-secret',
+    };
 
-      // Act & Assert
-      expect(() => {
-        require('../config');
-      }).toThrow();
+    it('should throw error for invalid NODE_ENV', () => {
+      process.env = { ...baseValidEnv, NODE_ENV: 'invalid-env' };
+      expect(() => require('../config')).toThrow();
     });
 
     it('should throw error for invalid FRONTEND_URL', () => {
-      // Arrange
-      process.env = {
-        FRONTEND_URL: 'not-a-url',
-        PUBLIC_URL: 'http://localhost:4000',
-        DATABASE_URL: 'postgresql://user:pass@localhost:5432/db',
-        SESSION_JWT_SECRET: 'a'.repeat(32),
-        TOKEN_ENCRYPTION_KEY: 'b'.repeat(32),
-        GITHUB_WEBHOOK_SECRET: 'c'.repeat(16),
-        GITHUB_OAUTH_CLIENT_ID: 'test-client-id',
-        GITHUB_OAUTH_CLIENT_SECRET: 'test-client-secret',
-      };
-
-      // Act & Assert
-      expect(() => {
-        require('../config');
-      }).toThrow('FRONTEND_URL must be a valid URL for your frontend');
+      process.env = { ...baseValidEnv, FRONTEND_URL: 'not-a-url' };
+      expect(() => require('../config')).toThrow('FRONTEND_URL must be a valid URL for your frontend');
     });
 
     it('should throw error for invalid PUBLIC_URL', () => {
-      // Arrange
-      process.env = {
-        FRONTEND_URL: 'http://localhost:3000',
-        PUBLIC_URL: 'not-a-url',
-        DATABASE_URL: 'postgresql://user:pass@localhost:5432/db',
-        SESSION_JWT_SECRET: 'a'.repeat(32),
-        TOKEN_ENCRYPTION_KEY: 'b'.repeat(32),
-        GITHUB_WEBHOOK_SECRET: 'c'.repeat(16),
-        GITHUB_OAUTH_CLIENT_ID: 'test-client-id',
-        GITHUB_OAUTH_CLIENT_SECRET: 'test-client-secret',
-      };
-
-      // Act & Assert
-      expect(() => {
-        require('../config');
-      }).toThrow('PUBLIC_URL must be the publicly accessible URL for your backend');
+      process.env = { ...baseValidEnv, PUBLIC_URL: 'not-a-url' };
+      expect(() => require('../config')).toThrow('PUBLIC_URL must be the publicly accessible URL for your backend');
     });
 
     it('should throw error for invalid DATABASE_URL', () => {
-      // Arrange
-      process.env = {
-        FRONTEND_URL: 'http://localhost:3000',
-        PUBLIC_URL: 'http://localhost:4000',
-        DATABASE_URL: 'not-a-url',
-        SESSION_JWT_SECRET: 'a'.repeat(32),
-        TOKEN_ENCRYPTION_KEY: 'b'.repeat(32),
-        GITHUB_WEBHOOK_SECRET: 'c'.repeat(16),
-        GITHUB_OAUTH_CLIENT_ID: 'test-client-id',
-        GITHUB_OAUTH_CLIENT_SECRET: 'test-client-secret',
-      };
-
-      // Act & Assert
-      expect(() => {
-        require('../config');
-      }).toThrow('DATABASE_URL must be a valid PostgreSQL connection URL');
+      process.env = { ...baseValidEnv, DATABASE_URL: 'not-a-url' };
+      expect(() => require('../config')).toThrow('DATABASE_URL must be a valid PostgreSQL connection URL');
     });
 
     it('should throw error for SESSION_JWT_SECRET too short', () => {
-      // Arrange
-      process.env = {
-        FRONTEND_URL: 'http://localhost:3000',
-        PUBLIC_URL: 'http://localhost:4000',
-        DATABASE_URL: 'postgresql://user:pass@localhost:5432/db',
-        SESSION_JWT_SECRET: 'short',
-        TOKEN_ENCRYPTION_KEY: 'b'.repeat(32),
-        GITHUB_WEBHOOK_SECRET: 'c'.repeat(16),
-        GITHUB_OAUTH_CLIENT_ID: 'test-client-id',
-        GITHUB_OAUTH_CLIENT_SECRET: 'test-client-secret',
-      };
-
-      // Act & Assert
-      expect(() => {
-        require('../config');
-      }).toThrow('SESSION_JWT_SECRET must be at least 32 characters long');
+      process.env = { ...baseValidEnv, SESSION_JWT_SECRET: 'short' };
+      expect(() => require('../config')).toThrow('SESSION_JWT_SECRET must be at least 32 characters long');
     });
 
     it('should throw error for TOKEN_ENCRYPTION_KEY too short', () => {
-      // Arrange
-      process.env = {
-        FRONTEND_URL: 'http://localhost:3000',
-        PUBLIC_URL: 'http://localhost:4000',
-        DATABASE_URL: 'postgresql://user:pass@localhost:5432/db',
-        SESSION_JWT_SECRET: 'a'.repeat(32),
-        TOKEN_ENCRYPTION_KEY: 'short',
-        GITHUB_WEBHOOK_SECRET: 'c'.repeat(16),
-        GITHUB_OAUTH_CLIENT_ID: 'test-client-id',
-        GITHUB_OAUTH_CLIENT_SECRET: 'test-client-secret',
-      };
-
-      // Act & Assert
-      expect(() => {
-        require('../config');
-      }).toThrow('TOKEN_ENCRYPTION_KEY must be a strong, 32-byte base64 key');
+      process.env = { ...baseValidEnv, TOKEN_ENCRYPTION_KEY: 'short' };
+      expect(() => require('../config')).toThrow('TOKEN_ENCRYPTION_KEY must be a strong, 32-byte base64 key');
     });
 
     it('should throw error for GITHUB_WEBHOOK_SECRET too short', () => {
-      // Arrange
-      process.env = {
-        FRONTEND_URL: 'http://localhost:3000',
-        PUBLIC_URL: 'http://localhost:4000',
-        DATABASE_URL: 'postgresql://user:pass@localhost:5432/db',
-        SESSION_JWT_SECRET: 'a'.repeat(32),
-        TOKEN_ENCRYPTION_KEY: 'b'.repeat(32),
-        GITHUB_WEBHOOK_SECRET: 'short',
-        GITHUB_OAUTH_CLIENT_ID: 'test-client-id',
-        GITHUB_OAUTH_CLIENT_SECRET: 'test-client-secret',
-      };
-
-      // Act & Assert
-      expect(() => {
-        require('../config');
-      }).toThrow('GITHUB_WEBHOOK_SECRET must be a strong secret');
+      process.env = { ...baseValidEnv, GITHUB_WEBHOOK_SECRET: 'short' };
+      expect(() => require('../config')).toThrow('GITHUB_WEBHOOK_SECRET must be a strong secret');
     });
 
     it('should throw error for empty GITHUB_OAUTH_CLIENT_ID', () => {
-      // Arrange
-      process.env = {
-        FRONTEND_URL: 'http://localhost:3000',
-        PUBLIC_URL: 'http://localhost:4000',
-        DATABASE_URL: 'postgresql://user:pass@localhost:5432/db',
-        SESSION_JWT_SECRET: 'a'.repeat(32),
-        TOKEN_ENCRYPTION_KEY: 'b'.repeat(32),
-        GITHUB_WEBHOOK_SECRET: 'c'.repeat(16),
-        GITHUB_OAUTH_CLIENT_ID: '',
-        GITHUB_OAUTH_CLIENT_SECRET: 'test-client-secret',
-      };
-
-      // Act & Assert
-      expect(() => {
-        require('../config');
-      }).toThrow('GITHUB_OAUTH_CLIENT_ID is required');
+      process.env = { ...baseValidEnv, GITHUB_OAUTH_CLIENT_ID: '' };
+      expect(() => require('../config')).toThrow('GITHUB_OAUTH_CLIENT_ID is required');
     });
 
     it('should throw error for empty GITHUB_OAUTH_CLIENT_SECRET', () => {
-      // Arrange
-      process.env = {
-        FRONTEND_URL: 'http://localhost:3000',
-        PUBLIC_URL: 'http://localhost:4000',
-        DATABASE_URL: 'postgresql://user:pass@localhost:5432/db',
-        SESSION_JWT_SECRET: 'a'.repeat(32),
-        TOKEN_ENCRYPTION_KEY: 'b'.repeat(32),
-        GITHUB_WEBHOOK_SECRET: 'c'.repeat(16),
-        GITHUB_OAUTH_CLIENT_ID: 'test-client-id',
-        GITHUB_OAUTH_CLIENT_SECRET: '',
-      };
-
-      // Act & Assert
-      expect(() => {
-        require('../config');
-      }).toThrow('GITHUB_OAUTH_CLIENT_SECRET is required');
+      process.env = { ...baseValidEnv, GITHUB_OAUTH_CLIENT_SECRET: '' };
+      expect(() => require('../config')).toThrow('GITHUB_OAUTH_CLIENT_SECRET is required');
     });
 
     it('should throw error for invalid OLLAMA_API_URL', () => {
-      // Arrange
-      process.env = {
-        FRONTEND_URL: 'http://localhost:3000',
-        PUBLIC_URL: 'http://localhost:4000',
-        DATABASE_URL: 'postgresql://user:pass@localhost:5432/db',
-        SESSION_JWT_SECRET: 'a'.repeat(32),
-        TOKEN_ENCRYPTION_KEY: 'b'.repeat(32),
-        GITHUB_WEBHOOK_SECRET: 'c'.repeat(16),
-        GITHUB_OAUTH_CLIENT_ID: 'test-client-id',
-        GITHUB_OAUTH_CLIENT_SECRET: 'test-client-secret',
-        OLLAMA_API_URL: 'not-a-url',
-      };
-
-      // Act & Assert
-      expect(() => {
-        require('../config');
-      }).toThrow();
+      process.env = { ...baseValidEnv, OLLAMA_API_URL: 'not-a-url' };
+      expect(() => require('../config')).toThrow();
     });
 
     it('should throw error for invalid REDIS_URL when USE_REDIS is true', () => {
-      // Arrange
-      process.env = {
-        FRONTEND_URL: 'http://localhost:3000',
-        PUBLIC_URL: 'http://localhost:4000',
-        DATABASE_URL: 'postgresql://user:pass@localhost:5432/db',
-        USE_REDIS: 'true',
-        REDIS_URL: 'not-a-url',
-        SESSION_JWT_SECRET: 'a'.repeat(32),
-        TOKEN_ENCRYPTION_KEY: 'b'.repeat(32),
-        GITHUB_WEBHOOK_SECRET: 'c'.repeat(16),
-        GITHUB_OAUTH_CLIENT_ID: 'test-client-id',
-        GITHUB_OAUTH_CLIENT_SECRET: 'test-client-secret',
-      };
-
-      // Act & Assert
-      expect(() => {
-        require('../config');
-      }).toThrow();
+      process.env = { ...baseValidEnv, USE_REDIS: 'true', REDIS_URL: 'not-a-url' };
+      expect(() => require('../config')).toThrow();
     });
   });
 
+  /**
+   * Verifies conditional validation logic, such as for Redis configuration.
+   */
   describe('optional variables', () => {
     it('should allow REDIS_URL to be optional when USE_REDIS is false', () => {
-      // Arrange
       process.env = {
         FRONTEND_URL: 'http://localhost:3000',
         PUBLIC_URL: 'http://localhost:4000',
@@ -492,15 +321,10 @@ describe('Config Validation', () => {
         GITHUB_OAUTH_CLIENT_ID: 'test-client-id',
         GITHUB_OAUTH_CLIENT_SECRET: 'test-client-secret',
       };
-
-      // Act & Assert
-      expect(() => {
-        require('../config');
-      }).not.toThrow();
+      expect(() => require('../config')).not.toThrow();
     });
 
     it('should require REDIS_URL when USE_REDIS is true', () => {
-      // Arrange
       process.env = {
         FRONTEND_URL: 'http://localhost:3000',
         PUBLIC_URL: 'http://localhost:4000',
@@ -513,11 +337,7 @@ describe('Config Validation', () => {
         GITHUB_OAUTH_CLIENT_ID: 'test-client-id',
         GITHUB_OAUTH_CLIENT_SECRET: 'test-client-secret',
       };
-
-      // Act & Assert
-      expect(() => {
-        require('../config');
-      }).not.toThrow();
+      expect(() => require('../config')).not.toThrow();
     });
   });
 });

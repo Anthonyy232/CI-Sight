@@ -3,6 +3,11 @@ import {logger} from '../utils/logger';
 
 const mockedLogger = logger as jest.Mocked<typeof logger>;
 
+/**
+ * Test suite for the global error handling middleware.
+ * This suite verifies that errors are logged and formatted correctly based
+ * on the application environment (production vs. development).
+ */
 describe('errorHandler', () => {
   let mockReq: any;
   let mockRes: any;
@@ -22,16 +27,17 @@ describe('errorHandler', () => {
     jest.clearAllMocks();
   });
 
+  /**
+   * Verifies that in a production environment, errors are logged with details,
+   * but the client receives a generic 500 Internal Server Error message.
+   */
   it('should log error and send 500 response in production', () => {
-    // Arrange
     const error = new Error('Test error');
     const originalEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = 'production';
 
-    // Act
     errorHandler(error, mockReq, mockRes, mockNext);
 
-    // Assert
     expect(mockedLogger.error).toHaveBeenCalledWith(
       'An unexpected error occurred:',
       expect.objectContaining({
@@ -47,50 +53,51 @@ describe('errorHandler', () => {
       message: 'An unexpected error occurred',
     });
 
-    // Cleanup
     process.env.NODE_ENV = originalEnv;
   });
 
+  /**
+   * Verifies that in a development environment, the specific error message is
+   * included in the JSON response to aid in debugging.
+   */
   it('should include error message in development', () => {
-    // Arrange
     const error = new Error('Development error');
     const originalEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = 'development';
 
-    // Act
     errorHandler(error, mockReq, mockRes, mockNext);
 
-    // Assert
     expect(mockRes.json).toHaveBeenCalledWith({
       error: 'Internal Server Error',
       message: 'Development error',
     });
 
-    // Cleanup
     process.env.NODE_ENV = originalEnv;
   });
 
+  /**
+   * Ensures that if a status code has already been set on the response (e.g., by a
+   * controller), the error handler respects it instead of defaulting to 500.
+   */
   it('should use existing status code if set', () => {
-    // Arrange
     const error = new Error('Bad request');
     mockRes.statusCode = 400;
 
-    // Act
     errorHandler(error, mockReq, mockRes, mockNext);
 
-    // Assert
     expect(mockRes.status).toHaveBeenCalledWith(400);
   });
 
+  /**
+   * Verifies that the error handler can gracefully handle error objects
+   * that may not have a stack trace.
+   */
   it('should handle errors without stack trace', () => {
-    // Arrange
     const error = new Error('No stack');
     error.stack = undefined;
 
-    // Act
     errorHandler(error, mockReq, mockRes, mockNext);
 
-    // Assert
     expect(mockedLogger.error).toHaveBeenCalledWith(
       'An unexpected error occurred:',
       expect.objectContaining({

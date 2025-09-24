@@ -1,25 +1,24 @@
-// src/__tests__/crypto.service.test.ts
-
 import {CryptoService} from '../services/crypto.service';
 import crypto from 'crypto';
 import {logger} from '../utils/logger';
 
-// Mock the logger to prevent console noise during tests
 jest.mock('../utils/logger', () => ({
   logger: {
     warn: jest.fn(),
   },
 }));
 
-// Mock config for standard tests
-// Avoid referencing imported bindings inside the jest.mock factory at module
-// initialization time to prevent hoisting/initialization order problems.
 jest.mock('../config', () => ({
   config: {
     TOKEN_ENCRYPTION_KEY: require('./testUtils').TEST_TOKEN_ENCRYPTION_KEY,
   },
 }));
 
+/**
+ * Test suite for the CryptoService.
+ * This suite verifies the core cryptographic operations, including encryption,
+ * decryption, error handling, and key derivation logic.
+ */
 describe('CryptoService', () => {
   let cryptoService: CryptoService;
 
@@ -28,61 +27,70 @@ describe('CryptoService', () => {
     cryptoService = new CryptoService();
   });
 
+  /**
+   * Tests the encryption and decryption round-trip and error handling.
+   */
   describe('encrypt and decrypt', () => {
+    /**
+     * Verifies that a string can be encrypted and then successfully decrypted
+     * back to its original value.
+     */
     it('should encrypt and decrypt a string correctly', () => {
-      // Arrange
       const originalText = 'Hello, World!';
 
-      // Act
       const encrypted = cryptoService.encrypt(originalText);
       const decrypted = cryptoService.decrypt(encrypted);
 
-      // Assert
       expect(decrypted).toBe(originalText);
       expect(encrypted).not.toBe(originalText);
     });
 
+    /**
+     * Ensures that attempting to decrypt a malformed (too short) payload
+     * returns an empty string and logs a warning.
+     */
     it('should return an empty string when decrypting a malformed payload (too short)', () => {
-      // Arrange
       const malformedPayload = 'short';
 
-      // Act
       const decrypted = cryptoService.decrypt(malformedPayload);
 
-      // Assert
       expect(decrypted).toBe('');
       expect(logger.warn).toHaveBeenCalledWith('Decrypt failed: payload is too short.');
     });
 
+    /**
+     * Verifies that if the underlying crypto library throws an error during decryption,
+     * the service catches it, logs a warning, and returns an empty string.
+     */
     it('should return an empty string when decryption fails due to an error', () => {
-      // Arrange
       const invalidPayload = 'this-is-not-a-valid-encrypted-string-and-will-throw-an-error';
 
-      // Act
       const decrypted = cryptoService.decrypt(invalidPayload);
 
-      // Assert
       expect(decrypted).toBe('');
       expect(logger.warn).toHaveBeenCalledWith('Decrypt failed', expect.any(Object));
     });
   });
 
+  /**
+   * Tests the fallback key derivation logic.
+   */
   describe('key derivation', () => {
+    /**
+     * Verifies that if the provided TOKEN_ENCRYPTION_KEY is not in the expected
+     * 32-byte base64 format, the service falls back to deriving a key using SHA-256.
+     * This test uses `jest.isolateModules` to re-import the service with a modified config.
+     */
     it('should derive a key using SHA-256 if the provided key is not a valid 32-byte base64 string', () => {
-      // Use isolateModules to ensure we get a fresh instance of the service with our new mock
       jest.isolateModules(() => {
-          // Arrange
-          const badKey = 'this-key-is-not-base64-and-not-32-bytes';
-          // Reset module registry so our doMock takes effect for this isolated run
-          jest.resetModules();
-          // Use doMock here so we only override the config for this isolated module run
-          jest.doMock('../config', () => ({
-            config: { TOKEN_ENCRYPTION_KEY: badKey },
-          }));
+        const badKey = 'this-key-is-not-base64-and-not-32-bytes';
+        jest.resetModules();
+        jest.doMock('../config', () => ({
+          config: { TOKEN_ENCRYPTION_KEY: badKey },
+        }));
 
-        // Spy on the crypto module to verify behavior
-        const updateSpy = jest.fn().mockReturnThis(); // FIX: Return `this` to allow chaining
-        const digestSpy = jest.fn().mockReturnValue(Buffer.alloc(32)); // Return a buffer to satisfy constructor
+        const updateSpy = jest.fn().mockReturnThis();
+        const digestSpy = jest.fn().mockReturnValue(Buffer.alloc(32));
         const createHashSpy = jest.spyOn(crypto, 'createHash').mockImplementation(
           () =>
             ({
@@ -91,17 +99,13 @@ describe('CryptoService', () => {
             } as any)
         );
 
-        // Act
-        // We must require the module *inside* isolateModules to get the version with the new mock
-  const { CryptoService: CryptoServiceWithFallback } = require('../services/crypto.service');
+        const { CryptoService: CryptoServiceWithFallback } = require('../services/crypto.service');
         new CryptoServiceWithFallback();
 
-        // Assert
         expect(createHashSpy).toHaveBeenCalledWith('sha256');
         expect(updateSpy).toHaveBeenCalledWith(badKey);
         expect(digestSpy).toHaveBeenCalled();
 
-        // Cleanup
         createHashSpy.mockRestore();
       });
     });

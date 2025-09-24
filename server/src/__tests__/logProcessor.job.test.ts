@@ -1,15 +1,11 @@
-// src/__tests__/logProcessor.job.test.ts
-
-let processLogJob: any;
-import {prisma} from '../db';
-import {classifyError, findSimilarity} from '../services/ml.service';
-import {generateSolution} from '../services/llm.service';
-import {CryptoService} from '../services/crypto.service';
-import {BuildStatus} from '@prisma/client';
+import { prisma } from '../db';
+import { classifyError, findSimilarity } from '../services/ml.service';
+import { generateSolution } from '../services/llm.service';
+import { CryptoService } from '../services/crypto.service';
+import { BuildStatus } from '@prisma/client';
 import axios from 'axios';
 import AdmZip from 'adm-zip';
 
-// Mock all module-level dependencies
 jest.mock('../db', () => ({
   prisma: {
     repoLink: { findFirst: jest.fn() },
@@ -20,12 +16,14 @@ jest.mock('../db', () => ({
 }));
 jest.mock('../services/ml.service');
 jest.mock('../services/llm.service');
-jest.mock('../utils/log-parser', () => ({
-  extractErrorContext: jest.fn(text => text),
-  sanitizeForLlm: jest.fn(text => text),
-}));
 jest.mock('../services/crypto.service');
-jest.mock('../utils/logger', () => ({ logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() } }));
+jest.mock('../utils/log-parser', () => ({
+  extractErrorContext: jest.fn((logText, errorSignature) => `context: ${logText}`),
+  sanitizeForLlm: jest.fn(text => `sanitized: ${text}`),
+}));
+jest.mock('../utils/logger', () => ({
+  logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+}));
 jest.mock('axios');
 jest.mock('adm-zip');
 
@@ -37,10 +35,15 @@ const mockedCryptoService = CryptoService as jest.MockedClass<typeof CryptoServi
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 const mockedAdmZip = AdmZip as jest.MockedClass<typeof AdmZip>;
 
-describe('Log Processor Job: processLogJob', () => {
-  let cryptoService: jest.Mocked<CryptoService>;
+/**
+ * Test suite for the log processing background job.
+ * This suite verifies the end-to-end logic of handling a GitHub webhook payload,
+ * including fetching logs, analyzing failures, and updating build status in the database.
+ */
+describe('Log Processor Job', () => {
+  let processLogJob: (job: any) => Promise<any>;
 
-  const mockJobData = {
+  const mockPayload = {
     repository: { full_name: 'owner/repo' },
     workflow_run: {
       id: 12345,
@@ -52,117 +55,229 @@ describe('Log Processor Job: processLogJob', () => {
       logs_url: 'https://api.github.com/logs',
     },
   };
-  const mockJob = { id: 'test-job-1', data: { payload: mockJobData } };
+  const mockJob = { id: 'test-job-1', data: { payload: mockPayload } };
   const mockProject = { id: 1, name: 'repo', githubRepoUrl: 'owner/repo' };
   const mockBuild = { id: 1, status: BuildStatus.FAILURE, githubRunId: '12345' };
-  const mockRepoLink = { user: { id: 1, githubPat: 'encrypted-pat' } };
+  const mockRepoLink = { user: { id: 1, accessToken: 'encrypted-token' } };
+  const mockLogText = 'Log line 1\nnpm err! This is the error signature\nLog line 3';
 
   beforeEach(() => {
     jest.clearAllMocks();
 
-    cryptoService = { decrypt: jest.fn().mockReturnValue('decrypted-token'), encrypt: jest.fn() } as any;
-    mockedCryptoService.mockImplementation(() => cryptoService);
+    const cryptoServiceInstance = { decrypt: jest.fn().mockReturnValue('decrypted-token') } as any;
+    mockedCryptoService.mockImplementation(() => cryptoServiceInstance);
 
-  (mockedPrisma.project.upsert as unknown as jest.Mock).mockResolvedValue(mockProject);
-  (mockedPrisma.build.upsert as unknown as jest.Mock).mockResolvedValue(mockBuild as any);
-  (mockedPrisma.build.findUnique as unknown as jest.Mock).mockResolvedValue(null);
-  (mockedPrisma.logEntry.count as unknown as jest.Mock).mockResolvedValue(0);
-  (mockedPrisma.repoLink.findFirst as unknown as jest.Mock).mockResolvedValue(mockRepoLink as any);
+    (mockedPrisma.project.upsert as jest.Mock).mockResolvedValue(mockProject);
+    (mockedPrisma.build.upsert as jest.Mock).mockResolvedValue(mockBuild as any);
+    (mockedPrisma.build.findUnique as jest.Mock).mockResolvedValue(null);
+    (mockedPrisma.logEntry.count as jest.Mock).mockResolvedValue(0);
+    (mockedPrisma.repoLink.findFirst as jest.Mock).mockResolvedValue(mockRepoLink as any);
 
-    // FIX: The mock for AdmZip was incorrect. It must be a mock constructor
-    // that returns an object with the methods used by the implementation.
     const mockZipEntry = {
       isDirectory: false,
       entryName: 'job/1_step.txt',
-      getData: jest.fn().mockReturnValue(Buffer.from('Log line 1\nnpm ERR! Some error occurred\nLog line 3')),
+      getData: jest.fn().mockReturnValue(Buffer.from(mockLogText)),
     };
     const mockZipInstance = { getEntries: jest.fn().mockReturnValue([mockZipEntry]) };
     mockedAdmZip.mockImplementation(() => mockZipInstance as any);
+
     mockedAxios.get.mockResolvedValue({ data: Buffer.from('zip-data') });
-
-    mockedClassifyError.mockResolvedValue({ category: 'Test Failure' });
-
-    // Require the job module after all mocks are in place so its module-level
-    // initialization (like `new CryptoService()`) uses our mocked implementations.
-    const jobModule = require('../jobs/logProcessor.job');
-    processLogJob = jobModule.processLogJob;
+    mockedClassifyError.mockResolvedValue({ category: 'Build Failure' });
+    
+    processLogJob = require('../jobs/logProcessor.job').processLogJob;
   });
 
-  it('should process a failed build and use LLM when no high-confidence match is found', async () => {
-    // Arrange
-    mockedFindSimilarity.mockResolvedValue({ similarity: 0.5, solution: 'old solution' } as any);
-    mockedGenerateSolution.mockResolvedValue('llm-generated-solution');
+  /**
+   * Verifies that the job fails early if the webhook payload is missing essential data.
+   */
+  it('should throw an error if critical payload data is missing', async () => {
+    const badJob = { id: 'bad-job', data: { payload: { repository: {} } } };
+    
+    await expect(processLogJob(badJob)).rejects.toThrow('Job bad-job missing critical data: runId or repoFullName');
+  });
 
-    // Act
-    await processLogJob(mockJob as any);
+  /**
+   * Tests the logic for analyzing build failures.
+   */
+  describe('Build Failure Analysis', () => {
+    /**
+     * Verifies that if a high-confidence match is found in the knowledge base,
+     * its solution is used directly, and the LLM is not called.
+     */
+    it('should use a high-confidence similarity match and skip the LLM', async () => {
+      mockedFindSimilarity.mockResolvedValue({
+        id: 123,
+        errorText: 'mock error',
+        category: 'Build Failure',
+        similarity: 0.95,
+        solution: 'Known solution from KB',
+      });
 
-    // Assert
-    expect(mockedPrisma.logEntry.createMany).toHaveBeenCalled();
-    expect(mockedGenerateSolution).toHaveBeenCalled();
-    expect(mockedPrisma.build.update).toHaveBeenCalledWith({
-      where: { id: mockBuild.id },
-      data: {
-        errorCategory: 'Test Failure',
-        failureReason: 'llm-generated-solution',
-      },
+      await processLogJob(mockJob);
+
+      expect(mockedFindSimilarity).toHaveBeenCalledWith(expect.stringContaining('This is the error signature'));
+      expect(mockedGenerateSolution).not.toHaveBeenCalled();
+      expect(mockedPrisma.build.update).toHaveBeenCalledWith({
+        where: { id: mockBuild.id },
+        data: {
+          errorCategory: 'Build Failure',
+          failureReason: 'Known solution from KB',
+        },
+      });
+    });
+
+    /**
+     * Verifies that when no high-confidence match is found, the system falls back
+     * to the LLM to generate a new solution.
+     */
+    it('should fall back to the LLM when no high-confidence match is found', async () => {
+      mockedFindSimilarity.mockResolvedValue({
+        id: 456,
+        errorText: 'mock error',
+        category: 'Build Failure',
+        similarity: 0.5,
+        solution: 'Low confidence solution',
+      });
+      mockedGenerateSolution.mockResolvedValue('A new solution from the LLM');
+      const expectedInputToLlm = `sanitized: context: ${mockLogText}`;
+
+      await processLogJob(mockJob);
+
+      expect(mockedFindSimilarity).toHaveBeenCalled();
+      expect(mockedGenerateSolution).toHaveBeenCalledWith(expectedInputToLlm);
+      expect(mockedPrisma.build.update).toHaveBeenCalledWith({
+        where: { id: mockBuild.id },
+        data: {
+          errorCategory: 'Build Failure',
+          failureReason: 'A new solution from the LLM',
+        },
+      });
+    });
+    
+    /**
+     * Verifies that if the LLM fails to generate a solution, the system uses the
+     * best available (even if low-confidence) match from the similarity search as a fallback.
+     */
+    it('should handle LLM failure by using the best available similarity match', async () => {
+        mockedFindSimilarity.mockResolvedValue({
+            id: 789,
+            errorText: 'mock error',
+            category: 'Build Failure',
+            similarity: 0.6,
+            solution: 'Low confidence solution',
+        });
+        mockedGenerateSolution.mockResolvedValue(null);
+  
+        await processLogJob(mockJob);
+  
+        expect(mockedGenerateSolution).toHaveBeenCalled();
+        expect(mockedPrisma.build.update).toHaveBeenCalledWith({
+          where: { id: mockBuild.id },
+          data: {
+            errorCategory: 'Build Failure',
+            failureReason: 'Could not generate a new solution. The most similar known issue suggests: Low confidence solution',
+          },
+        });
+      });
+  });
+
+  /**
+   * Tests the logic related to fetching and persisting build logs.
+   */
+  describe('Log Fetching Logic', () => {
+    /**
+     * Ensures that logs are not re-downloaded if they already exist in the database for a given build,
+     * preventing redundant processing.
+     */
+    it('should not fetch logs if they already exist for the build', async () => {
+        (mockedPrisma.logEntry.count as jest.Mock).mockResolvedValue(100);
+  
+        await processLogJob(mockJob);
+  
+        expect(mockedAxios.get).not.toHaveBeenCalled();
+        expect(mockedFindSimilarity).not.toHaveBeenCalled();
+    });
+    
+    /**
+     * Verifies that if the log download from GitHub fails, the analysis process is aborted.
+     */
+    it('should not attempt analysis if log download fails', async () => {
+      mockedAxios.get.mockRejectedValue(new Error('GitHub API timeout'));
+
+      await processLogJob(mockJob);
+
+      const { logger } = require('../utils/logger');
+      expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('Failed to download or extract logs'), expect.any(Object));
+      expect(mockedPrisma.logEntry.createMany).not.toHaveBeenCalled();
+      expect(mockedFindSimilarity).not.toHaveBeenCalled();
+    });
+
+    /**
+     * Verifies that log fetching is skipped if no authenticated user link is found
+     * for the repository, as a token is required for the API call.
+     */
+    it('should not attempt analysis if no repo link with a token is found', async () => {
+        (mockedPrisma.repoLink.findFirst as jest.Mock).mockResolvedValue(null);
+  
+        await processLogJob(mockJob);
+  
+        const { logger } = require('../utils/logger');
+        expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('No active user link found'));
+        expect(mockedAxios.get).not.toHaveBeenCalled();
+        expect(mockedFindSimilarity).not.toHaveBeenCalled();
     });
   });
+  
+  /**
+   * Tests the handling of different stages and outcomes of a build lifecycle.
+   */
+  describe('Build Lifecycle Handling', () => {
+    /**
+     * Verifies that a successful build is processed (logs are saved) but does not
+     * trigger the failure analysis workflow.
+     */
+    it('should process a successful build without triggering failure analysis', async () => {
+      const successPayload = {
+        ...mockPayload,
+        workflow_run: { ...mockPayload.workflow_run, conclusion: 'success' },
+      };
+      const successJob = { ...mockJob, data: { payload: successPayload } };
+      (mockedPrisma.build.upsert as jest.Mock).mockResolvedValue({ ...mockBuild, status: BuildStatus.SUCCESS });
 
-  it('should process a successful build without calling analysis services', async () => {
-    // Arrange
-    const successJob = {
-      ...mockJob,
-      data: {
-        payload: {
-          ...mockJobData,
-          workflow_run: { ...mockJobData.workflow_run, conclusion: 'success' },
+      await processLogJob(successJob);
+
+      expect(mockedAxios.get).toHaveBeenCalled();
+      expect(mockedPrisma.logEntry.createMany).toHaveBeenCalled();
+      expect(mockedFindSimilarity).not.toHaveBeenCalled();
+      expect(mockedGenerateSolution).not.toHaveBeenCalled();
+    });
+
+    /**
+     * Verifies that when a build is re-run (moves from a completed state to 'in_progress'),
+     * the job correctly deletes the old logs and resets the build's status and data.
+     */
+    it('should handle a build rerun by deleting old logs and resetting status', async () => {
+      const rerunPayload = {
+          ...mockPayload,
+          workflow_run: { ...mockPayload.workflow_run, conclusion: null, status: 'in_progress' },
+        };
+      const rerunJob = { ...mockJob, data: { payload: rerunPayload } };
+      const existingFailedBuild = { ...mockBuild, id: 99, status: BuildStatus.FAILURE };
+      (mockedPrisma.build.findUnique as jest.Mock).mockResolvedValue(existingFailedBuild);
+
+      await processLogJob(rerunJob);
+
+      expect(mockedPrisma.logEntry.deleteMany).toHaveBeenCalledWith({ where: { buildId: existingFailedBuild.id } });
+      expect(mockedPrisma.build.update).toHaveBeenCalledWith({
+        where: { id: existingFailedBuild.id },
+        data: {
+          status: BuildStatus.RUNNING,
+          completedAt: null,
+          failureReason: null,
+          errorCategory: null,
+          startedAt: new Date(rerunPayload.workflow_run.run_started_at),
         },
-      },
-    };
-
-    // Ensure the upsert returns a SUCCESS build so analysis is skipped
-    (mockedPrisma.build.upsert as unknown as jest.Mock).mockResolvedValue({ ...mockBuild, status: BuildStatus.SUCCESS } as any);
-
-    // Act
-    await processLogJob(successJob as any);
-
-    // Assert
-    expect(mockedPrisma.build.upsert).toHaveBeenCalledWith(expect.objectContaining({
-      update: expect.objectContaining({ status: BuildStatus.SUCCESS }),
-      create: expect.objectContaining({ status: BuildStatus.SUCCESS }),
-    }));
-    expect(mockedFindSimilarity).not.toHaveBeenCalled();
-    expect(mockedGenerateSolution).not.toHaveBeenCalled();
-  });
-
-  it('should handle a build rerun by deleting old logs and resetting build status', async () => {
-    // Arrange
-    const rerunJob = {
-      ...mockJob,
-      data: {
-        payload: {
-          ...mockJobData,
-          workflow_run: { ...mockJobData.workflow_run, conclusion: null, status: 'in_progress' },
-        },
-      },
-    };
-    const existingFailedBuild = { ...mockBuild, status: BuildStatus.FAILURE };
-  (mockedPrisma.build.findUnique as unknown as jest.Mock).mockResolvedValue(existingFailedBuild as any);
-
-    // Act
-    await processLogJob(rerunJob as any);
-
-    // Assert
-    expect(mockedPrisma.logEntry.deleteMany).toHaveBeenCalledWith({ where: { buildId: existingFailedBuild.id } });
-    expect(mockedPrisma.build.update).toHaveBeenCalledWith({
-      where: { id: existingFailedBuild.id },
-      data: {
-        status: BuildStatus.RUNNING,
-        completedAt: null,
-        failureReason: null,
-        errorCategory: null,
-        startedAt: new Date(mockJobData.workflow_run.run_started_at),
-      },
+      });
     });
   });
 });

@@ -3,6 +3,11 @@ import {GithubService} from '../services/github.service';
 
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 
+/**
+ * Test suite for the GithubService.
+ * This suite verifies the service's interactions with the GitHub API for
+ * fetching user data, repositories, and managing webhooks.
+ */
 describe('GithubService', () => {
   let githubService: GithubService;
   const mockToken = 'mock-github-token';
@@ -12,9 +17,14 @@ describe('GithubService', () => {
     jest.clearAllMocks();
   });
 
+  /**
+   * Tests for fetching user profile data from a GitHub token.
+   */
   describe('fetchUserFromToken', () => {
+    /**
+     * Verifies a successful API call to fetch user data.
+     */
     it('should fetch user data from GitHub API', async () => {
-      // Arrange
       const mockUserData = {
         id: 123,
         login: 'testuser',
@@ -23,10 +33,8 @@ describe('GithubService', () => {
       };
       mockedAxios.get.mockResolvedValueOnce({ data: mockUserData });
 
-      // Act
       const result = await githubService.fetchUserFromToken(mockToken);
 
-      // Assert
       expect(mockedAxios.get).toHaveBeenCalledWith(
         'https://api.github.com/user',
         expect.objectContaining({
@@ -39,19 +47,26 @@ describe('GithubService', () => {
       expect(result).toEqual(mockUserData);
     });
 
+    /**
+     * Ensures that errors from the GitHub API are propagated correctly.
+     */
     it('should throw error when API call fails', async () => {
-      // Arrange
       const error = new Error('API Error');
       mockedAxios.get.mockRejectedValueOnce(error);
 
-      // Act & Assert
       await expect(githubService.fetchUserFromToken(mockToken)).rejects.toThrow('API Error');
     });
   });
 
+  /**
+   * Tests for fetching a user's repositories.
+   */
   describe('fetchUserRepos', () => {
+    /**
+     * Verifies a successful API call to fetch a user's repositories and confirms
+     * the data is returned in the expected format.
+     */
     it('should fetch and transform user repositories', async () => {
-      // Arrange
       const mockReposData = [
         {
           id: 1,
@@ -68,10 +83,8 @@ describe('GithubService', () => {
       ];
       mockedAxios.get.mockResolvedValueOnce({ data: mockReposData });
 
-      // Act
       const result = await githubService.fetchUserRepos(mockToken);
 
-      // Assert
       expect(mockedAxios.get).toHaveBeenCalledWith(
         'https://api.github.com/user/repos?per_page=100&sort=updated',
         expect.objectContaining({
@@ -87,9 +100,15 @@ describe('GithubService', () => {
     });
   });
 
+  /**
+   * Tests for creating a repository webhook.
+   */
   describe('createWebhook', () => {
+    /**
+     * Verifies that the service makes the correct API call to create a webhook
+     * with the specified configuration.
+     */
     it('should create webhook successfully', async () => {
-      // Arrange
       const mockWebhookData = { id: 123, url: 'https://example.com/webhook' };
       mockedAxios.post.mockResolvedValueOnce({ data: mockWebhookData });
       const owner = 'testuser';
@@ -97,10 +116,8 @@ describe('GithubService', () => {
       const webhookUrl = 'https://myapp.com/webhook';
       const secret = 'webhook-secret';
 
-      // Act
       const result = await githubService.createWebhook(owner, repo, mockToken, webhookUrl, secret);
 
-      // Assert
       expect(mockedAxios.post).toHaveBeenCalledWith(
         `https://api.github.com/repos/${owner}/${repo}/hooks`,
         {
@@ -122,30 +139,34 @@ describe('GithubService', () => {
       expect(result).toEqual(mockWebhookData);
     });
 
+    /**
+     * Ensures that errors during webhook creation are properly handled.
+     */
     it('should throw error when webhook creation fails', async () => {
-      // Arrange
       const error = new Error('Webhook creation failed');
       mockedAxios.post.mockRejectedValueOnce(error);
 
-      // Act & Assert
       await expect(
         githubService.createWebhook('owner', 'repo', mockToken, 'url', 'secret')
       ).rejects.toThrow('Webhook creation failed');
     });
   });
 
+  /**
+   * Tests for deleting a repository webhook.
+   */
   describe('deleteWebhook', () => {
+    /**
+     * Verifies a successful webhook deletion call and confirms the method returns `true`.
+     */
     it('should delete webhook successfully', async () => {
-      // Arrange
       mockedAxios.delete.mockResolvedValueOnce({ status: 204 });
       const owner = 'testuser';
       const repo = 'testrepo';
       const hookId = 123;
 
-      // Act
       const result = await githubService.deleteWebhook(owner, repo, hookId, mockToken);
 
-      // Assert
       expect(mockedAxios.delete).toHaveBeenCalledWith(
         `https://api.github.com/repos/${owner}/${repo}/hooks/${hookId}`,
         expect.objectContaining({
@@ -157,15 +178,15 @@ describe('GithubService', () => {
       expect(result).toBe(true);
     });
 
+    /**
+     * Verifies that the method returns `false` if the API call to delete the webhook fails.
+     */
     it('should return false when webhook deletion fails', async () => {
-      // Arrange
       const error = new Error('Deletion failed');
       mockedAxios.delete.mockRejectedValueOnce(error);
 
-      // Act
       const result = await githubService.deleteWebhook('owner', 'repo', 123, mockToken);
 
-      // Assert
       expect(result).toBe(false);
     });
   });

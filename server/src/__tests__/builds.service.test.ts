@@ -1,7 +1,6 @@
 import {BuildsService} from '../modules/builds/builds.service';
 import {prisma} from '../db';
 
-// Mock prisma
 jest.mock('../db', () => ({
   prisma: {
     build: {
@@ -13,6 +12,10 @@ jest.mock('../db', () => ({
 
 const mockedPrisma = prisma as jest.Mocked<typeof prisma>;
 
+/**
+ * Test suite for the BuildsService.
+ * This suite verifies the business logic for retrieving and processing build data.
+ */
 describe('BuildsService', () => {
   let buildsService: BuildsService;
 
@@ -21,9 +24,15 @@ describe('BuildsService', () => {
     jest.clearAllMocks();
   });
 
+  /**
+   * Tests for retrieving a list of recent builds.
+   */
   describe('getRecentBuilds', () => {
+    /**
+     * Verifies that recent builds are fetched and transformed correctly, including
+     * project name and a normalized commit identifier.
+     */
     it('should return recent builds with project information', async () => {
-      // Arrange
       const mockBuilds = [
         {
           id: 1,
@@ -46,10 +55,8 @@ describe('BuildsService', () => {
 
       (mockedPrisma.build.findMany as jest.Mock).mockResolvedValue(mockBuilds);
 
-      // Act
       const result = await buildsService.getRecentBuilds(10);
 
-      // Assert
       expect(mockedPrisma.build.findMany).toHaveBeenCalledWith({
         take: 10,
         orderBy: { startedAt: 'desc' },
@@ -69,26 +76,29 @@ describe('BuildsService', () => {
           id: 2,
           projectName: 'another-project',
           status: 'FAILURE',
-          commit: '12345678', // githubRunId truncated to 8 chars
+          commit: '12345678',
           startedAt: '2023-01-02T00:00:00.000Z',
           completedAt: null,
         },
       ]);
     });
 
+    /**
+     * Ensures the service handles cases where no builds are found.
+     */
     it('should handle empty results', async () => {
-      // Arrange
       (mockedPrisma.build.findMany as jest.Mock).mockResolvedValue([]);
 
-      // Act
       const result = await buildsService.getRecentBuilds(5);
 
-      // Assert
       expect(result).toEqual([]);
     });
 
+    /**
+     * Verifies that if `triggeringCommit` is null, the `githubRunId` is used as a fallback,
+     * truncated to 8 characters.
+     */
     it('should handle builds without triggering commit', async () => {
-      // Arrange
       const mockBuilds = [
         {
           id: 1,
@@ -103,17 +113,21 @@ describe('BuildsService', () => {
 
       (mockedPrisma.build.findMany as jest.Mock).mockResolvedValue(mockBuilds);
 
-      // Act
       const result = await buildsService.getRecentBuilds(10);
 
-      // Assert
-      expect(result[0].commit).toBe('98765432'); // githubRunId truncated to 8 chars
+      expect(result[0].commit).toBe('98765432');
     });
   });
 
+  /**
+   * Tests for retrieving the detailed information of a single build.
+   */
   describe('getBuildDetails', () => {
+    /**
+     * Verifies that build details are fetched and that associated log entries
+     * are correctly aggregated into a single string.
+     */
     it('should return build details with logs', async () => {
-      // Arrange
       const mockBuild = {
         id: 123,
         project: {
@@ -135,10 +149,8 @@ describe('BuildsService', () => {
 
       (mockedPrisma.build.findUnique as jest.Mock).mockResolvedValue(mockBuild);
 
-      // Act
       const result = await buildsService.getBuildDetails(123);
 
-      // Assert
       expect(mockedPrisma.build.findUnique).toHaveBeenCalledWith({
         where: { id: 123 },
         include: {
@@ -161,19 +173,21 @@ describe('BuildsService', () => {
       });
     });
 
+    /**
+     * Ensures that `null` is returned for a build ID that does not exist.
+     */
     it('should return null for non-existent build', async () => {
-      // Arrange
       (mockedPrisma.build.findUnique as jest.Mock).mockResolvedValue(null);
 
-      // Act
       const result = await buildsService.getBuildDetails(999);
 
-      // Assert
       expect(result).toBeNull();
     });
 
+    /**
+     * Verifies that failure-related information is correctly included in the response.
+     */
     it('should handle builds with failure information', async () => {
-      // Arrange
       const mockBuild = {
         id: 456,
         project: {
@@ -195,17 +209,17 @@ describe('BuildsService', () => {
 
       (mockedPrisma.build.findUnique as jest.Mock).mockResolvedValue(mockBuild);
 
-      // Act
       const result = await buildsService.getBuildDetails(456);
 
-      // Assert
       expect(result?.failureReason).toBe('Tests failed');
       expect(result?.errorCategory).toBe('Test Failure');
       expect(result?.logs).toContain('Test failed: expected true, got false');
     });
 
+    /**
+     * Ensures that builds with no associated log entries result in an empty log string.
+     */
     it('should handle builds without logs', async () => {
-      // Arrange
       const mockBuild = {
         id: 789,
         project: {
@@ -223,17 +237,21 @@ describe('BuildsService', () => {
 
       (mockedPrisma.build.findUnique as jest.Mock).mockResolvedValue(mockBuild);
 
-      // Act
       const result = await buildsService.getBuildDetails(789);
 
-      // Assert
       expect(result?.logs).toBe('');
     });
   });
 
+  /**
+   * Tests for generating analytics on build errors.
+   */
   describe('getErrorAnalytics', () => {
+    /**
+     * Verifies that analytics are correctly calculated, including total failures
+     * and a breakdown of error categories with counts and percentages.
+     */
     it('should return error analytics with categories', async () => {
-      // Arrange
       const mockFailedBuilds = [
         { errorCategory: 'Test Failure' },
         { errorCategory: 'Test Failure' },
@@ -245,10 +263,8 @@ describe('BuildsService', () => {
 
       (mockedPrisma.build.findMany as jest.Mock).mockResolvedValue(mockFailedBuilds);
 
-      // Act
       const result = await buildsService.getErrorAnalytics();
 
-      // Assert
       expect(mockedPrisma.build.findMany).toHaveBeenCalledWith({
         where: { status: 'FAILURE' },
         select: { errorCategory: true },
@@ -278,22 +294,25 @@ describe('BuildsService', () => {
       });
     });
 
+    /**
+     * Ensures the service returns a zero-state when there are no failed builds.
+     */
     it('should handle no failed builds', async () => {
-      // Arrange
       (mockedPrisma.build.findMany as jest.Mock).mockResolvedValue([]);
 
-      // Act
       const result = await buildsService.getErrorAnalytics();
 
-      // Assert
       expect(result).toEqual({
         totalFailed: 0,
         categories: [],
       });
     });
 
+    /**
+     * Verifies that builds with a null `errorCategory` are counted in the total
+     * but excluded from the category breakdown.
+     */
     it('should handle builds with null error categories', async () => {
-      // Arrange
       const mockFailedBuilds = [
         { errorCategory: null },
         { errorCategory: null },
@@ -302,17 +321,17 @@ describe('BuildsService', () => {
 
       (mockedPrisma.build.findMany as jest.Mock).mockResolvedValue(mockFailedBuilds);
 
-      // Act
       const result = await buildsService.getErrorAnalytics();
 
-      // Assert
       expect(result.totalFailed).toBe(3);
       expect(result.categories).toHaveLength(1);
       expect(result.categories[0].category).toBe('Known Error');
     });
 
+    /**
+     * Ensures the analytics results are limited to the top 5 most frequent error categories.
+     */
     it('should limit to top 5 categories', async () => {
-      // Arrange
       const mockFailedBuilds = [
         { errorCategory: 'Error 1' },
         { errorCategory: 'Error 1' },
@@ -321,21 +340,21 @@ describe('BuildsService', () => {
         { errorCategory: 'Error 3' },
         { errorCategory: 'Error 4' },
         { errorCategory: 'Error 5' },
-        { errorCategory: 'Error 6' }, // This should be excluded
+        { errorCategory: 'Error 6' },
       ];
 
       (mockedPrisma.build.findMany as jest.Mock).mockResolvedValue(mockFailedBuilds);
 
-      // Act
       const result = await buildsService.getErrorAnalytics();
 
-      // Assert
       expect(result.categories).toHaveLength(5);
       expect(result.categories.map(c => c.category)).not.toContain('Error 6');
     });
 
+    /**
+     * Verifies that the returned categories are sorted in descending order of count.
+     */
     it('should sort categories by count descending', async () => {
-      // Arrange
       const mockFailedBuilds = [
         { errorCategory: 'Least Common' },
         { errorCategory: 'Most Common' },
@@ -347,10 +366,8 @@ describe('BuildsService', () => {
 
       (mockedPrisma.build.findMany as jest.Mock).mockResolvedValue(mockFailedBuilds);
 
-      // Act
       const result = await buildsService.getErrorAnalytics();
 
-      // Assert
       expect(result.categories[0].category).toBe('Most Common');
       expect(result.categories[1].category).toBe('Medium Common');
       expect(result.categories[2].category).toBe('Least Common');
