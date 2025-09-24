@@ -1,7 +1,17 @@
 <h1 align="center">CI-Sight</h1>
-
 <p align="center">
-  An intelligent monitoring dashboard for GitHub Actions that provides automated failure analysis and performance insights.
+<a href="https://github.com/anthonyy232/ci-sight/actions">
+<img src="https://github.com/Anthonyy232/CI-Sight/actions/workflows/ci.yml/badge.svg" alt="CI/CD Build Status"/>
+</a>
+<a href="https://github.com/anthonyy232/ci-sight/blob/main/LICENSE">
+<img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPLv3"/>
+</a>
+<a href="https://github.com/anthonyy232/ci-sight/stargazers">
+<img src="https://img.shields.io/github/stars/anthonyy232/ci-sight?style=social" alt="GitHub Stars"/>
+</a>
+</p>
+<p align="center">
+An intelligent monitoring dashboard for GitHub Actions that provides automated failure analysis and performance insights.
 </p>
 
 ---
