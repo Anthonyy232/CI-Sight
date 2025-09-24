@@ -7,7 +7,8 @@
 ---
 
 <p align="center">
-  <img src="https://i.imgur.com/aBcDeFg.png" alt="CI-Sight Dashboard Screenshot">
+  <img src="https://github.com/user-attachments/assets/cd0650ed-e5ec-4517-80c2-05fa405031c2" alt="CI-Sight Dashboard Screenshot">
+  <img src="https://github.com/user-attachments/assets/83fc2e79-b30f-4d8f-aa1a-478f66f20f34" alt="CI-Sight Build Screenshot">
 </p>
 
 ## Overview
