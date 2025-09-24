@@ -1,0 +1,47 @@
+
+.logViewport {
+  height: calc(100vh - 400px);
+  overflow-y: auto;
+  background-color: var(--mantine-color-dark-8);
+  border-radius: var(--mantine-radius-sm);
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 12px;
+  contain: strict;
+}
+
+.logLine {
+  display: flex;
+  align-items: flex-start;
+  line-height: 1.5;
+  transition: background-color 0.2s ease;
+  padding: 0 12px;
+}
+
+.logLine:hover {
+  background-color: var(--mantine-color-hover);
+}
+
+.logLine[data-error='true'] {
+  background-color: rgba(255, 135, 135, 0.1);
+}
+
+.logLine[data-error='true']:hover {
+  background-color: rgba(255, 135, 135, 0.2);
+}
+
+.lineNumber {
+  display: inline-block;
+  text-align: right;
+  width: 40px;
+  padding-right: 12px;
+  color: var(--mantine-color-dark-3);
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.logContent {
+  flex: 1;
+  white-space: pre;
+  word-break: break-all;
+  color: var(--mantine-color-dark-0);
+}

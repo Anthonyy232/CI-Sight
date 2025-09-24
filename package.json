@@ -1,0 +1,12 @@
+{
+  "name": "ci-sight-root",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm --prefix ./client run dev\" \"npm --prefix ./server run dev\"",
+    "dev:client": "npm --prefix ./client run dev",
+    "dev:server": "npm --prefix ./server run dev"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

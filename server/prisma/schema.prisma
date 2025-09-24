@@ -1,0 +1,89 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [vector]
+}
+
+enum BuildStatus {
+  RUNNING
+  SUCCESS
+  FAILURE
+  CANCELLED
+}
+
+model Project {
+  id            Int        @id @default(autoincrement())
+  name          String
+  githubRepoUrl String     @unique
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  builds        Build[]
+  repoLinks     RepoLink[]
+}
+
+model User {
+  id          Int        @id @default(autoincrement())
+  githubId    Int        @unique
+  login       String
+  name        String?
+  avatarUrl   String?
+  accessToken String // encrypted OAuth token
+  githubPat   String? // encrypted Personal Access Token
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  repoLinks   RepoLink[]
+}
+
+model Build {
+  id               Int         @id @default(autoincrement())
+  project          Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId        Int
+  githubRunId      String      @unique
+  status           BuildStatus
+  failureReason    String?
+  errorCategory    String?
+  triggeringCommit String?
+  startedAt        DateTime
+  completedAt      DateTime?
+  logEntries       LogEntry[]
+}
+
+model LogEntry {
+  id         Int      @id @default(autoincrement())
+  build      Build    @relation(fields: [buildId], references: [id], onDelete: Cascade)
+  buildId    Int
+  lineNumber Int
+  content    String
+
+  @@index([buildId])
+}
+
+model RepoLink {
+  id           Int       @id @default(autoincrement())
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       Int
+  project      Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId    Int
+  repoFullName String // owner/name
+  webhookId    Int?
+  deletedAt    DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@unique([userId, projectId])
+}
+
+model KnownError {
+  id             Int      @id @default(autoincrement())
+  errorText      String
+  // CRITICAL CHANGE: Use the native vector type for efficient search.
+  // The dimension (384) must match the output of the sentence-transformer model.
+  errorEmbedding Unsupported("vector(384)")
+  solution       String
+  category       String
+  createdAt      DateTime @default(now())
+}
