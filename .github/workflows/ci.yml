@@ -81,7 +81,17 @@ jobs:
 
       - name: Run server tests
         env:
-          SESSION_JWT_SECRET: "test-secret"
-          TOKEN_ENCRYPTION_KEY: "a0a1a2a3a4a5a6a7a8a9a0a1a2a3a4a5a6a7a8a9a0a1a2a3a4a5a6a7a8a9a0a1"
-          GITHUB_WEBHOOK_SECRET: "test-webhook-secret"
+          # --- Non-Sensitive Configuration for Tests ---
+          FRONTEND_URL: "http://localhost:5173"
+          PUBLIC_URL: "http://localhost:4000"
+
+          # --- Secrets loaded from GitHub with valid names ---
+          SESSION_JWT_SECRET: ${{ secrets.SESSION_JWT_SECRET }}
+          TOKEN_ENCRYPTION_KEY: ${{ secrets.TOKEN_ENCRYPTION_KEY }}
+
+          # --- Mapping secrets to the environment variables your application expects ---
+          # The left side is the ENV_VAR_NAME, the right side is the SECRET_NAME
+          GITHUB_WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
+          GITHUB_OAUTH_CLIENT_ID: ${{ secrets.OAUTH_CLIENT_ID }}
+          GITHUB_OAUTH_CLIENT_SECRET: ${{ secrets.OAUTH_CLIENT_SECRET }}
         run: npm test --prefix server
