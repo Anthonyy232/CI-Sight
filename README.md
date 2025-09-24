@@ -223,4 +223,4 @@ These instructions guide you through deploying the entire application stack usin
 
 ## License
 
-This project is licensed under the MIT License.
+This project is licensed under the GPLv3 License.
