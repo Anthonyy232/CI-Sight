@@ -50,7 +50,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
           cache: 'npm'
 
       - name: Set up Python
@@ -59,12 +59,12 @@ jobs:
           python-version: '3.10'
           cache: 'pip'
 
-      - name: Install dependencies
+      - name: Install dependencies with npm ci
         run: |
-          npm install
+          npm ci
           pip install -r ml/requirements.txt
-          npm install --prefix client
-          npm install --prefix server
+          npm ci --prefix client
+          npm ci --prefix server
 
       - name: Scan for vulnerabilities
         run: |
