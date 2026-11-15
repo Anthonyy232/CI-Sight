@@ -1,236 +1,117 @@
-<h1 align="center">CI-Sight</h1>
-<p align="center">
-<a href="https://github.com/anthonyy232/ci-sight/actions">
-<img src="https://github.com/Anthonyy232/CI-Sight/actions/workflows/ci.yml/badge.svg" alt="CI/CD Build Status"/>
-</a>
-<a href="https://github.com/anthonyy232/ci-sight/blob/main/LICENSE">
-<img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPLv3"/>
-</a>
-<a href="https://github.com/anthonyy232/ci-sight/stargazers">
-<img src="https://img.shields.io/github/stars/anthonyy232/ci-sight?style=social" alt="GitHub Stars"/>
-</a>
-</p>
-<p align="center">
-An intelligent monitoring dashboard for GitHub Actions that provides automated failure analysis and performance insights.
-</p>
-
----
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset=".github/readme/hero-dark.png">
+  <img src=".github/readme/hero-light.png" alt="CI-Sight: see why the build broke. The dashboard with build analytics, and a failed build explained next to its log.">
+</picture>
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/cd0650ed-e5ec-4517-80c2-05fa405031c2" alt="CI-Sight Dashboard Screenshot">
-  <img src="https://github.com/user-attachments/assets/83fc2e79-b30f-4d8f-aa1a-478f66f20f34" alt="CI-Sight Build Screenshot">
+  <a href="#run-it"><b>Run it</b></a>
+  &nbsp;·&nbsp;
+  <a href="https://github.com/Anthonyy232/CI-Sight/actions/workflows/checks.yml"><b>Checks</b></a>
 </p>
 
-## Overview
+CI-Sight is a self-hosted dashboard for GitHub Actions. Sign in with GitHub, pick your repositories, and it follows their workflow runs through webhooks. When a run fails, it reads the log, sorts the failure into a category and suggests a fix, either from a library of known errors or from a local language model running in [Ollama](https://ollama.com).
 
-CI-Sight is an open-source tool designed to address the complexity of debugging and monitoring CI/CD pipelines. It ingests data from GitHub Actions via webhooks and uses a combination of machine learning and LLM-driven analysis to automatically categorize failures, identify trends, and suggest solutions. This turns opaque build logs into structured, actionable intelligence, helping engineering teams reduce downtime and improve pipeline reliability.
+> [!NOTE]
+> CI-Sight is a personal project from 2025 and isn't actively developed. It builds and its tests pass on current dependencies, but the full stack (database, queue, models and a GitHub OAuth app) hasn't been run end to end since 2025. Issues and pull requests are still welcome.
 
-## Key Features
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset=".github/readme/feature-dashboard-dark.png">
+  <img src=".github/readme/feature-dashboard-light.png" alt="01. Every pipeline, one view. The dashboard with project overview, build analytics, error insights and recent activity, with demo data.">
+</picture>
 
--   **Centralized Dashboard:** Monitor build success rates, average durations, and error trends across all connected projects from a single interface.
--   **Real-Time Webhook Integration:** Automatically tracks the status of GitHub Actions workflow runs as they happen.
--   **AI-Powered Failure Analysis:**
-    -   **Error Classification:** Automatically categorizes build failures (e.g., `Dependency Error`, `Test Failure`) using a zero-shot classification model.
-    -   **Vector Similarity Search:** Uses `pgvector` to find previously encountered errors and their known solutions from an embedded knowledge base.
-    -   **LLM-Generated Solutions:** Leverages a local LLM (via Ollama) to suggest actionable solutions for novel or complex errors.
--   **Detailed Build Analysis:** Drill down into individual builds to view full, virtualized logs, AI-generated failure reasons, and direct links to the original GitHub run.
--   **Project-Specific Analytics:** Isolate and analyze build performance, health, and activity for individual repositories.
--   **Secure GitHub Integration:** Uses a standard GitHub OAuth flow for authentication and securely encrypts user tokens at rest.
+The dashboard shows, across every repository you've added:
 
-## Technology Stack
+- **Build analytics**: success rate, average duration and how many runs are in progress.
+- **Error insights**: the share of recent failures in each category.
+- **Repository health**: which repositories have their webhook registered.
+- **Recent activity** and **recent builds**, refreshed every 30 seconds.
 
-<table>
-  <tr>
-    <td valign="top"><strong>Frontend</strong></td>
-    <td>
-      <img src="https://img.shields.io/badge/React-61DAFB?logo=react&logoColor=black" alt="React"/>
-      <img src="https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white" alt="TypeScript"/>
-      <img src="https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=white" alt="Vite"/>
-      <img src="https://img.shields.io/badge/Mantine-339AF0?logo=mantine&logoColor=white" alt="Mantine UI"/>
-      <img src="https://img.shields.io/badge/TanStack_Query-FF4154?logo=tanstack&logoColor=white" alt="TanStack Query"/>
-    </td>
-  </tr>
-  <tr>
-    <td valign="top"><strong>Backend</strong></td>
-    <td>
-      <img src="https://img.shields.io/badge/Node.js-339933?logo=nodedotjs&logoColor=white" alt="Node.js"/>
-      <img src="https://img.shields.io/badge/Express-000000?logo=express&logoColor=white" alt="Express"/>
-      <img src="https://img.shields.io/badge/Prisma-2D3748?logo=prisma&logoColor=white" alt="Prisma"/>
-      <img src="https://img.shields.io/badge/BullMQ-D12A28?logo=bullmq&logoColor=white" alt="BullMQ"/>
-      <img src="https://img.shields.io/badge/JWT-000000?logo=jsonwebtokens&logoColor=white" alt="JWT"/>
-    </td>
-  </tr>
-  <tr>
-    <td valign="top"><strong>Database & Cache</strong></td>
-    <td>
-      <img src="https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL"/>
-      <img src="https://img.shields.io/badge/pgvector-2E8555?logo=postgresql&logoColor=white" alt="pgvector"/>
-      <img src="https://img.shields.io/badge/Redis-DC382D?logo=redis&logoColor=white" alt="Redis"/>
-    </td>
-  </tr>
-  <tr>
-    <td valign="top"><strong>ML / AI</strong></td>
-    <td>
-      <img src="https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white" alt="Python"/>
-      <img src="https://img.shields.io/badge/SentenceTransformers-000000" alt="Sentence Transformers"/>
-      <img src="https://img.shields.io/badge/Ollama-000000" alt="Ollama"/>
-    </td>
-  </tr>
-  <tr>
-    <td valign="top"><strong>DevOps & Testing</strong></td>
-    <td>
-      <img src="https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white" alt="Docker"/>
-      <img src="https://img.shields.io/badge/Jest-C21325?logo=jest&logoColor=white" alt="Jest"/>
-    </td>
-  </tr>
-</table>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset=".github/readme/feature-failures-dark.png">
+  <img src=".github/readme/feature-failures-light.png" alt="02. Failures, explained. A failed build with its category, a suggested fix and the log with error lines highlighted, with demo data.">
+</picture>
 
-## Deployment
+Click a build to open its details. For a failed run, CI-Sight downloads the log, finds the error line and classifies it as a dependency error, test failure, syntax error, runtime error or build environment error. It then looks for a similar error in its library of known errors. If none is close enough, it asks the local model for a fix, with values that look like keys and tokens redacted from the log first. The full log sits below, with error lines highlighted, and a link opens the run on GitHub.
 
-You can run CI-Sight locally for development or deploy it to a production server using Docker.
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset=".github/readme/feature-projects-dark.png">
+  <img src=".github/readme/feature-projects-light.png" alt="03. Each repo, up close. A project page with statistics, build analytics, recent activity and recent builds, with demo data.">
+</picture>
 
-### Local Development
+Each repository has its own page with its build count, success and failure rates, average duration, recent activity and builds. Add a repository with **+** next to **Projects**: CI-Sight creates the webhook on GitHub for you. Deleting the project removes the webhook too.
 
-These instructions are for setting up a local development environment.
+The dashboard follows your system's light or dark theme.
 
-**Prerequisites:**
--   Node.js (v18+), Docker, Python (3.8+), and `ngrok`.
+## Run it
 
-1.  **Clone & Configure:**
-    ```bash
-    git clone https://github.com/anthonyy232/ci-sight.git
-    cd ci-sight
-    cp .env.example .env
-    ```
-    -   Edit `.env` and set `PUBLIC_URL` to your `ngrok` HTTPS URL.
-    -   Fill in your GitHub OAuth credentials and generate secure secrets.
+You need [Node.js](https://nodejs.org) 24, [Docker](https://www.docker.com) for PostgreSQL (with pgvector) and Redis, Python 3 for the models, and a public HTTPS address for GitHub's webhooks, such as an [ngrok](https://ngrok.com) tunnel. [Ollama](https://ollama.com) is optional: without it, failures still get a category and the closest known fix.
 
-2.  **Start Services:**
-    ```bash
-    docker-compose up -d
-    ```
+1. Clone the repository and copy the example settings:
 
-3.  **Set Up ML Environment:**
-    ```bash
-    python3 -m venv ml/venv
-    source ml/venv/bin/activate
-    pip install -r ml/requirements.txt
-    ```
-    -   Ensure `PYTHON_EXECUTABLE=./ml/venv/bin/python` is set in your `.env` file.
+   ```bash
+   git clone https://github.com/Anthonyy232/CI-Sight.git
+   cd CI-Sight
+   cp .env.example .env
+   ```
 
-4.  **Prepare Database:**
-    ```bash
-    # Apply schema
-    npx prisma migrate dev --schema=./server/prisma/schema.prisma
-    # Seed vector embeddings
-    python3 ml/scripts/seed_known_errors.py
-    ```
+2. [Create a GitHub OAuth app](https://github.com/settings/applications/new) with the callback URL `http://localhost:5173/api/auth/github/callback`, and put its client ID and secret in `.env`. Set `PUBLIC_URL` to your tunnel's address and fill in the three secrets; `openssl rand -base64 32` makes a good one.
 
-5.  **Install Dependencies & Run:**
-    ```bash
-    npm install
-    npm run dev
-    ```
-    -   The frontend will be available at `http://localhost:5173`.
+3. Start PostgreSQL and Redis:
 
-### Production (Docker)
+   ```bash
+   docker compose up -d
+   ```
 
-These instructions guide you through deploying the entire application stack using Docker.
+4. Set up the Python environment for the models:
 
-**Prerequisites:**
--   A server with Docker and Docker Compose installed.
--   A domain name pointing to your server's IP address.
+   ```bash
+   python3 -m venv ml/venv
+   source ml/venv/bin/activate
+   pip install -r ml/requirements.txt
+   ```
 
-1.  **Configure for Production:**
-    -   Copy `.env.example` to `.env` on your server.
-    -   Set `NODE_ENV=production`.
-    -   Set `PUBLIC_URL` and `FRONTEND_URL` to your public domain (e.g., `https://ci-sight.yourdomain.com`).
-    -   Generate strong, unique values for all secrets (`SESSION_JWT_SECRET`, `TOKEN_ENCRYPTION_KEY`, `GITHUB_WEBHOOK_SECRET`).
-    -   Update `DATABASE_URL` and `REDIS_URL` if you are using external/managed services.
+   On Windows, set `PYTHON_EXECUTABLE=ml/venv/Scripts/python.exe` in `.env`.
 
-2.  **Create Production Docker Compose File:**
-    Create a `docker-compose.prod.yml` file. This configuration builds the application image from the `Dockerfile` and runs it alongside the required services.
+5. Install, create the database and load the known errors:
 
-    ```yaml
-    # docker-compose.prod.yml
-    version: '3.8'
-    services:
-      app:
-        build: .
-        restart: always
-        ports:
-          - "4000:4000"
-        depends_on:
-          - postgres
-          - redis
-        env_file:
-          - .env
+   ```bash
+   npm ci && npm ci --prefix client && npm ci --prefix server
+   npx --prefix server prisma migrate dev --schema server/prisma/schema.prisma
+   python3 ml/scripts/seed_known_errors.py
+   ```
 
-      postgres:
-        image: pgvector/pgvector:pg16
-        restart: always
-        environment:
-          POSTGRES_USER: ${POSTGRES_USER:-postgres}
-          POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-          POSTGRES_DB: ${POSTGRES_DB:-ci_sight}
-        volumes:
-          - pgdata:/var/lib/postgresql/data
+6. Start the server and the dashboard:
 
-      redis:
-        image: redis:7
-        restart: always
+   ```bash
+   npm run dev
+   ```
 
-    volumes:
-      pgdata:
-    ```
+   Open http://localhost:5173 and sign in with GitHub.
 
-3.  **Build and Run the Application:**
-    ```bash
-    docker-compose -f docker-compose.prod.yml up --build -d
-    ```
+The models are downloaded from Hugging Face the first time they run: [facebook/bart-large-mnli](https://huggingface.co/facebook/bart-large-mnli) for categories and [sentence-transformers/all-MiniLM-L6-v2](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2) for finding similar errors. The default Ollama model is `codellama:7b`; change it with `OLLAMA_MODEL`.
 
-4.  **Apply Database Migrations:**
-    Run the production-safe migration command to apply the schema to your database.
-    ```bash
-    docker-compose -f docker-compose.prod.yml exec app npx prisma migrate deploy --schema=./server/prisma/schema.prisma
-    ```
+Build logs are downloaded with your GitHub sign-in. If they don't appear, add a personal access token with the `repo` scope under **Set GitHub Token** in the menu under your name.
 
-5.  **Post-Setup (Recommended):**
-    -   Configure a reverse proxy like Nginx or Caddy in front of the application to handle SSL termination and serve traffic on ports 80/443.
-    -   Seed the production database with the known error embeddings:
-        ```bash
-        docker-compose -f docker-compose.prod.yml exec app python3 ml/scripts/seed_known_errors.py
-        ```
+### Serving a build
 
-## Project Structure
+On Linux or macOS, build both parts and start the server in production mode. It serves the dashboard and the API from one address, so set `FRONTEND_URL` and `PUBLIC_URL` to that address and use `<address>/api/auth/github/callback` as the OAuth callback.
 
-<details>
-<summary>Click to expand the directory structure</summary>
-
-```
-/
-├── client/         # React frontend application (Vite, Mantine)
-│   ├── src/
-│   │   ├── api/      # API client and data-fetching functions
-│   │   ├── components/ # Reusable UI components
-│   │   └── features/ # Feature-based modules (dashboard, projects, etc.)
-│   └── vite.config.ts # Vite configuration with proxy to the backend
-├── server/         # Node.js backend application (Express, Prisma)
-│   ├── prisma/     # Prisma schema and migrations
-│   └── src/
-│       ├── jobs/     # Background job processors (BullMQ)
-│       ├── middleware/ # Express middleware (auth, error handling)
-│   │   ├── modules/  # Feature-based modules with routes, controllers, services
-│       └── services/ # Shared services (GitHub API, crypto, etc.)
-├── ml/             # Python scripts for ML tasks
-│   ├── scripts/    # Scripts for classification, similarity search, and seeding
-│   └── requirements.txt # Python dependencies
-├── docker-compose.yml # Defines PostgreSQL & Redis services for development
-└── Dockerfile      # Multi-stage Dockerfile for production builds
+```bash
+npm --prefix client run build
+npm --prefix server run build
+NODE_ENV=production npm --prefix server start
 ```
 
-</details>
+Put a reverse proxy such as Caddy or nginx in front of it for HTTPS.
+
+## Contributing
+
+Contributions are welcome. Read [AGENTS.md](AGENTS.md) before opening a pull request, and run `npm run check`, which builds the dashboard, type checks the server and runs its tests. The tests mock the database, Redis, GitHub and the models, so they need none of them.
 
 ## License
 
-This project is licensed under the GPLv3 License.
+Copyright (c) 2025 Anthony La.
+
+CI-Sight is free software, licensed under the [GNU General Public License v3.0](LICENSE) only, and comes with no warranty. The first commits, made on 24 September 2025, were published under the MIT License.
+
+The models it downloads keep their own licences.
