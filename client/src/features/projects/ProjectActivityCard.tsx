@@ -11,7 +11,7 @@ interface ProjectActivityCardProps {
 export function ProjectActivityCard({ projectId }: ProjectActivityCardProps) {
   const { data: builds, isLoading, isError } = useProjectBuilds(projectId);
 
-  const recentBuilds = builds?.slice(0, 8) || []; // Show last 8 builds
+  const recentBuilds = builds?.slice(0, 8) || [];
 
   const getStatusIcon = (status: string) => {
     switch (status) {

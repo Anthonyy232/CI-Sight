@@ -11,11 +11,6 @@ import {PatModal} from '../../features/auth/PatModal';
 import {DeleteProjectModal} from '../../features/projects/DeleteProjectModal';
 import {Project} from '../../api/types';
 
-/**
- * Application shell containing header, navbar, and modals.
- *
- * Responsible for global UI elements (project list, user menu) used across pages.
- */
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [mobileNavOpened, { toggle: toggleMobileNav }] = useDisclosure();
   const { data: me } = useMe();
@@ -24,14 +19,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // State for modals
   const [createModalOpened, { open: openCreateModal, close: closeCreateModal }] = useDisclosure(false);
   const [patModalOpened, { open: openPatModal, close: closePatModal }] = useDisclosure(false);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
 
   const deleteProjectMutation = useDeleteProject({
     onSuccess: (deletedProject) => {
-      // If we are on the page of the project that was just deleted, navigate home.
       if (location.pathname === `/projects/${deletedProject.id}`) {
         navigate('/');
       }
