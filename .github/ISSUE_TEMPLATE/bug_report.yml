@@ -1,0 +1,19 @@
+name: Bug report
+description: Something in CI-Sight doesn't work as it should
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected and what happened instead. Include server log lines if there are any.
+    validations:
+      required: true
+  - type: input
+    id: setup
+    attributes:
+      label: Setup
+      description: Commit, Node.js version and operating system.
+      placeholder: 1a2b3c4, Node.js 24, Ubuntu 24.04
+    validations:
+      required: true
