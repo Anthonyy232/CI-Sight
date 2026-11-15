@@ -1,0 +1,58 @@
+{
+  "now": "2026-11-15T16:00:00Z",
+  "user": { "id": 1, "login": "samrivera", "name": "Sam Rivera", "avatarUrl": null, "hasPat": true },
+  "projects": [
+    { "id": 1, "name": "harbor-api", "githubRepoUrl": "kestrel-labs/harbor-api", "createdMinutesAgo": 12960, "webhookId": 4001 },
+    { "id": 2, "name": "lumen-web", "githubRepoUrl": "kestrel-labs/lumen-web", "createdMinutesAgo": 8640, "webhookId": 4002 },
+    { "id": 3, "name": "tidepool-cli", "githubRepoUrl": "kestrel-labs/tidepool-cli", "createdMinutesAgo": 2880, "webhookId": null }
+  ],
+  "builds": [
+    { "id": 24, "projectId": 1, "status": "RUNNING", "commit": "9f3c2a1", "startedMinutesAgo": 2, "durationMinutes": null },
+    { "id": 23, "projectId": 2, "status": "FAILURE", "commit": "e41b7d0", "startedMinutesAgo": 18, "durationMinutes": 4.2 },
+    { "id": 22, "projectId": 1, "status": "SUCCESS", "commit": "7a90c3e", "startedMinutesAgo": 46, "durationMinutes": 5.1 },
+    { "id": 21, "projectId": 3, "status": "SUCCESS", "commit": "c2d81f4", "startedMinutesAgo": 75, "durationMinutes": 2.3 },
+    { "id": 20, "projectId": 2, "status": "SUCCESS", "commit": "51fa0be", "startedMinutesAgo": 130, "durationMinutes": 3.9 },
+    { "id": 19, "projectId": 1, "status": "FAILURE", "commit": "b7e2c95", "startedMinutesAgo": 190, "durationMinutes": 6.4 },
+    { "id": 18, "projectId": 1, "status": "SUCCESS", "commit": "0d4a6e2", "startedMinutesAgo": 260, "durationMinutes": 4.8 },
+    { "id": 17, "projectId": 3, "status": "CANCELLED", "commit": "3e8b1c7", "startedMinutesAgo": 320, "durationMinutes": 1.1 },
+    { "id": 16, "projectId": 2, "status": "SUCCESS", "commit": "a6c09d3", "startedMinutesAgo": 410, "durationMinutes": 4.0 },
+    { "id": 15, "projectId": 1, "status": "SUCCESS", "commit": "f19d2b8", "startedMinutesAgo": 520, "durationMinutes": 5.3 },
+    { "id": 14, "projectId": 3, "status": "FAILURE", "commit": "6b2e4f1", "startedMinutesAgo": 640, "durationMinutes": 2.0 },
+    { "id": 13, "projectId": 2, "status": "SUCCESS", "commit": "d8f37a0", "startedMinutesAgo": 760, "durationMinutes": 3.7 }
+  ],
+  "errorAnalytics": {
+    "totalFailed": 3,
+    "categories": [
+      { "category": "Test Failure", "count": 2, "percentage": 67 },
+      { "category": "Dependency Error", "count": 1, "percentage": 33 }
+    ]
+  },
+  "failure": {
+    "errorCategory": "Test Failure",
+    "failureReason": "The bulk discount test expects 81 but the cart total is 90, so the 10% rule never applied. applyDiscounts likely checks the quantity threshold with \">\" instead of \">=\": a cart of exactly 9 items should qualify. Fix the comparison in src/checkout/discounts.ts and re-run the test."
+  },
+  "log": [
+    "##[group]Run npm ci",
+    "npm ci --no-audit",
+    "added 812 packages in 16s",
+    "##[endgroup]",
+    "##[group]Run npm test -- --ci",
+    "> lumen-web@2.4.0 test",
+    "> vitest run --reporter=dot",
+    " ✓ src/lib/format.test.ts (14 tests) 38ms",
+    " ✓ src/lib/router.test.ts (9 tests) 51ms",
+    " ✓ src/components/Header.test.tsx (6 tests) 112ms",
+    " FAIL src/checkout/cart.test.ts > applies the bulk discount",
+    "AssertionError: expected 90 to be 81",
+    " ❯ src/checkout/cart.test.ts:42:31",
+    "     40|     const cart = createCart([item(10, 9)]);",
+    "     41|     applyDiscounts(cart, rules);",
+    "     42|     expect(cart.total).toBe(81);",
+    " ✓ src/checkout/address.test.ts (11 tests) 64ms",
+    " Test Files  1 failed | 3 passed (4)",
+    "      Tests  1 failed | 39 passed (40)",
+    "##[error]Process completed with exit code 1.",
+    "##[endgroup]",
+    "Post job cleanup."
+  ]
+}
