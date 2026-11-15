@@ -45,6 +45,7 @@ A self-hosted dashboard that follows GitHub Actions runs through webhooks and ex
 - README is for users: what it does, how to get it, how to use it. No internals, no agent instructions.
 - This file is for agents: only what can't be found quickly in the code.
 - No meta docs in the repo (notes, audits, plans, reports).
+- Generated images (README hero and panels, social preview) are built from the `media` branch; its README has the steps.
 
 ## Git
 
