@@ -9,5 +9,6 @@ module.exports = {
     '!src/server.ts',
     '!src/app.ts',
   ],
+  setupFiles: ['<rootDir>/jest.env.ts'],
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
 };
