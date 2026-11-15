@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",
-    "adm-zip": "^0.5.16",
+    "adm-zip": "^0.6.1",
     "axios": "^1.12.2",
     "bullmq": "^5.58.6",
     "cookie-parser": "^1.4.7",
