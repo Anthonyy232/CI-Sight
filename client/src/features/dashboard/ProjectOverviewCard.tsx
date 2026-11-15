@@ -34,7 +34,7 @@ export function ProjectOverviewCard() {
                   <IconFolder size={16} />
                   <Text size="sm">Total Projects</Text>
                 </Group>
-                <Badge variant="light" color="blue">{totalProjects}</Badge>
+                <Badge variant="light">{totalProjects}</Badge>
               </Group>
 
               <Group justify="space-between">

@@ -70,7 +70,7 @@ export function ProjectsListPage() {
               <Text size="sm" c="dimmed">Projects configured in your CI pipeline</Text>
             </div>
           </Group>
-          <Badge variant="light" color="blue" size="lg">
+          <Badge variant="light" size="lg">
             {projects.length}
           </Badge>
         </Group>

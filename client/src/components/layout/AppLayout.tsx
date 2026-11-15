@@ -51,8 +51,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <Burger opened={mobileNavOpened} onClick={toggleMobileNav} hiddenFrom="sm" size="sm" />
             <RouterNavLink to="/" style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>
               <Group gap="xs">
-                <Logo />
-                <Title order={4} c="dark.9">CI-Sight</Title>
+                <Logo size={28} />
+                <Title order={4} c="bright">CI-Sight</Title>
               </Group>
             </RouterNavLink>
           </Group>

@@ -1,20 +1,22 @@
 import {createTheme, MantineColorsTuple} from '@mantine/core';
 
+// Shade 6 is the logo colour.
 const primary: MantineColorsTuple = [
-  '#eef3ff',
-  '#dce4f5',
-  '#b9c7e8',
-  '#94a8dd',
-  '#748cd3',
-  '#5f7acd',
-  '#5171cb',
-  '#4161b5',
-  '#3755a2',
-  '#2a4890',
+  '#e7f7f1',
+  '#c8ecdf',
+  '#96dac4',
+  '#66c6a9',
+  '#3fb293',
+  '#1b8f73',
+  '#0f7a63',
+  '#0b6653',
+  '#085444',
+  '#054236',
 ];
 
 export const theme = createTheme({
   primaryColor: 'primary',
+  primaryShade: 6,
   colors: {
     primary,
   },
@@ -32,15 +34,12 @@ export const theme = createTheme({
       defaultProps: {
         radius: 'md',
         withBorder: true,
-        shadow: 'sm',
       },
     },
-    Table: {
+    Badge: {
       styles: {
-        th: {
-          textTransform: 'uppercase',
-          fontSize: '12px',
-          letterSpacing: '0.5px',
+        root: {
+          textTransform: 'none',
         },
       },
     },

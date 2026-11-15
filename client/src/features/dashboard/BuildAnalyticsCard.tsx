@@ -32,7 +32,7 @@ export function BuildAnalyticsCard() {
         <Stack gap="md">
           <Group justify="space-between">
             <Title order={5}>Build Analytics</Title>
-            <Badge variant="light" color="blue">{totalBuilds} total</Badge>
+            <Badge variant="light">{totalBuilds} total</Badge>
           </Group>
 
           {isLoading && <Loader />}

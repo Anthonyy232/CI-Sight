@@ -40,7 +40,7 @@ export function ProjectStatsCard({ projectId }: ProjectStatsCardProps) {
                   <IconGitCommit size={16} />
                   <Text size="sm">Total Builds</Text>
                 </Group>
-                <Badge variant="light" color="blue">{totalBuilds}</Badge>
+                <Badge variant="light">{totalBuilds}</Badge>
               </Group>
 
               <Group justify="space-between">

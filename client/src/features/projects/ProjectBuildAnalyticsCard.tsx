@@ -50,7 +50,7 @@ export function ProjectBuildAnalyticsCard({ projectId }: ProjectBuildAnalyticsCa
         <Stack gap="md">
           <Group justify="space-between">
             <Title order={5}>Build Analytics</Title>
-            <Badge variant="light" color="blue">{totalBuilds} builds</Badge>
+            <Badge variant="light">{totalBuilds} builds</Badge>
           </Group>
 
           {isLoading && <Loader />}

@@ -11,8 +11,8 @@ export function LoginPage() {
   };
 
   return (
-    <Center h="100vh" bg="var(--mantine-color-gray-0)">
-      <Paper shadow="md" p="xl" withBorder radius="md" w={600}>
+    <Center h="100vh" px="md">
+      <Paper p="xl" withBorder radius="md" w="100%" maw={420}>
         <Stack align="center" gap="xl">
           <Stack align="center" gap="xs">
             <Logo size={84} />

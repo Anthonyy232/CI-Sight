@@ -1,8 +1,10 @@
-import {Alert, Badge, Card, Center, Group, Loader, Stack, Text, Timeline, Title} from '@mantine/core';
+import {Alert, Card, Center, Group, Loader, Stack, Text, Timeline, Title} from '@mantine/core';
 import {IconAlertCircle, IconCheck, IconFolderPlus, IconGitCommit, IconX} from '@tabler/icons-react';
 import {useBuilds} from '../builds/useBuilds';
 import {useProjects} from '../projects/useProjects';
 import {formatDistanceToNow} from 'date-fns';
+import {BuildStatus} from '../../api/types';
+import {StatusBadge} from '../../components/common/StatusBadge';
 
 export function RecentActivityCard() {
   const { data: builds, isLoading: buildsLoading, isError: buildsError } = useBuilds();
@@ -17,7 +19,7 @@ export function RecentActivityCard() {
     title: string;
     description: string;
     timestamp: Date;
-    status?: string;
+    status?: BuildStatus;
     icon: any;
   }> = [];
 
@@ -46,15 +48,6 @@ export function RecentActivityCard() {
 
   activities.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 
-  const getStatusColor = (status?: string) => {
-    switch (status) {
-      case 'SUCCESS': return 'green';
-      case 'FAILURE': return 'red';
-      case 'RUNNING': return 'blue';
-      default: return 'gray';
-    }
-  };
-
   return (
     <Card withBorder padding="lg" h="100%">
       <Stack gap="md">
@@ -80,9 +73,7 @@ export function RecentActivityCard() {
                     <Group gap="xs" align="center">
                       <Text size="sm" fw={500}>{activity.title}</Text>
                       {activity.status && (
-                        <Badge size="xs" variant="light" color={getStatusColor(activity.status)}>
-                          {activity.status}
-                        </Badge>
+                        <StatusBadge status={activity.status} size="xs" />
                       )}
                     </Group>
                   }

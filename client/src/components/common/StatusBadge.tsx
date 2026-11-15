@@ -1,4 +1,4 @@
-import {Badge} from '@mantine/core';
+import {Badge, MantineSize} from '@mantine/core';
 import {BuildStatus} from '../../api/types';
 
 const statusMap: Record<BuildStatus, { label: string; color: string }> = {
@@ -8,10 +8,10 @@ const statusMap: Record<BuildStatus, { label: string; color: string }> = {
   CANCELLED: { label: 'Cancelled', color: 'gray' },
 };
 
-export function StatusBadge({ status }: { status: BuildStatus }) {
+export function StatusBadge({ status, size }: { status: BuildStatus; size?: MantineSize }) {
   const { label, color } = statusMap[status] || { label: 'Unknown', color: 'dark' };
   return (
-    <Badge color={color} variant="light">
+    <Badge color={color} variant="light" size={size}>
       {label}
     </Badge>
   );

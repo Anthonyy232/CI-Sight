@@ -14,7 +14,7 @@ export function RepositoryHealthCard() {
       <Stack gap="md">
         <Group justify="space-between">
           <Title order={5}>Repository Health</Title>
-          {isLoading ? <Loader size="sm" /> : <Badge variant="light" color="blue">{totalRepos} repos</Badge>}
+          {isLoading ? <Loader size="sm" /> : <Badge variant="light">{totalRepos} repos</Badge>}
         </Group>
 
         {isError && <Alert color="red" title="Error" icon={<IconAlertCircle />}>Failed to load repository data.</Alert>}

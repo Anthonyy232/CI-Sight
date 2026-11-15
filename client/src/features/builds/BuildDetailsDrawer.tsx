@@ -80,7 +80,7 @@ export function BuildDetailsDrawer({ buildId, opened, onClose }: BuildDetailsDra
           <Title order={5}>Logs</Title>
           
           {!build?.logs && !me?.user?.hasPat && (
-            <Alert color="blue" title="GitHub Token Required" icon={<IconInfoCircle />}>
+            <Alert title="GitHub Token Required" icon={<IconInfoCircle />}>
               To view build logs, you need to add a GitHub Personal Access Token with 'repo' scope. 
               Click on your avatar in the top-right corner and select "Set GitHub Token".
             </Alert>

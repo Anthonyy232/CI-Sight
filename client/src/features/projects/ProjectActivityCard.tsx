@@ -1,7 +1,8 @@
-import {Alert, Badge, Card, Center, Group, Loader, Stack, Text, Timeline, Title} from '@mantine/core';
+import {Alert, Card, Center, Group, Loader, Stack, Text, Timeline, Title} from '@mantine/core';
 import {IconAlertCircle, IconCheck, IconClock, IconGitCommit, IconX} from '@tabler/icons-react';
 import {useProjectBuilds} from './useProjects';
 import {formatDistanceToNow} from 'date-fns';
+import {StatusBadge} from '../../components/common/StatusBadge';
 
 interface ProjectActivityCardProps {
   projectId: number;
@@ -11,16 +12,6 @@ export function ProjectActivityCard({ projectId }: ProjectActivityCardProps) {
   const { data: builds, isLoading, isError } = useProjectBuilds(projectId);
 
   const recentBuilds = builds?.slice(0, 8) || []; // Show last 8 builds
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'SUCCESS': return 'green';
-      case 'FAILURE': return 'red';
-      case 'RUNNING': return 'blue';
-      case 'CANCELLED': return 'orange';
-      default: return 'gray';
-    }
-  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -59,9 +50,7 @@ export function ProjectActivityCard({ projectId }: ProjectActivityCardProps) {
                         <Text size="sm" fw={500}>
                           Build {build.status.toLowerCase()}
                         </Text>
-                        <Badge size="xs" variant="light" color={getStatusColor(build.status)}>
-                          {build.status}
-                        </Badge>
+                        <StatusBadge status={build.status} size="xs" />
                       </Group>
                     }
                   >
