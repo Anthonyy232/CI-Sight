@@ -9,6 +9,6 @@
     "check": "npm --prefix client run build && npm --prefix server run typecheck && npm --prefix server test"
   },
   "devDependencies": {
-    "concurrently": "^9.2.1"
+    "concurrently": "^10.0.7"
   }
 }
