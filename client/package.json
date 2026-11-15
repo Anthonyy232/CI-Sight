@@ -4,13 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "tsc && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
     "@mantine/core": "^8.3.1",
     "@mantine/hooks": "^8.3.1",
-    "@mantine/modals": "^8.3.1",
     "@mantine/notifications": "^8.3.1",
     "@tabler/icons-react": "^3.35.0",
     "@tanstack/react-query": "^5.89.0",
@@ -19,9 +18,7 @@
     "date-fns": "^4.1.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "react-router-dom": "^7.9.1",
-    "recharts": "^3.2.1",
-    "zustand": "^5.0.8"
+    "react-router-dom": "^7.9.1"
   },
   "devDependencies": {
     "@types/react": "^19.1.13",
