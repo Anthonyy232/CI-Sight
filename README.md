@@ -7,7 +7,7 @@ Generated images for [CI-Sight](https://github.com/Anthonyy232/CI-Sight), kept o
 | `lib.cjs` | Fonts and rendering shared by the scripts |
 | `fonts/` | Instrument Serif, under the SIL Open Font License (`OFL.txt`) |
 | `readme/demo-data.json` | The invented user, repositories, builds, failure and log the screenshots show |
-| `readme/capture.cjs` | Runs the real dashboard and answers its API from the demo data, then captures the dashboard, a project page and a failed build into `readme/inputs/` |
+| `readme/capture.cjs` | Builds and serves the real dashboard and answers its API from the demo data, then captures the dashboard, a project page and a failed build into `readme/inputs/` |
 | `readme/build.cjs` | Writes `.github/readme/*.png` in the checkout from `readme/inputs/`, and `social-preview.png` here |
 | `social-preview.png` | The 1280x640 GitHub social preview |
 
@@ -25,12 +25,12 @@ Or, from a checkout of `master`: `git worktree add ../ci-sight-media media`.
 ## README images
 
 ```bash
-npm ci --prefix ../CI-Sight/client        # capture runs the client's own Vite dev server
+npm ci --prefix ../CI-Sight/client        # capture builds and serves the client with its own Vite
 node readme/capture.cjs ../CI-Sight       # only when the UI or the demo data changed
 node readme/build.cjs ../CI-Sight
 ```
 
-The capture starts the client's Vite dev server on port 5179 (no server, database or GitHub needed), answers every `/api/*` request from `readme/demo-data.json`, and starts the page clock at the demo time in UTC, so dates and "minutes ago" come out the same each run. It captures at 1440x1000 and 2x, in light and dark, and stops on any API request the demo data doesn't cover.
+The capture builds the client (into its ignored `client/dist`) and serves it with `vite preview` on port 5179, with no server, database or GitHub needed. It answers every `/api/*` request from `readme/demo-data.json`, and starts the page clock at the demo time in UTC, so dates and "minutes ago" come out the same each run. It captures at 1440x1000 and 2x, in light and dark, and stops on any API request the demo data doesn't cover.
 
 The build also copies the social preview to `~/Downloads/CI-Sight-social-preview.png` when that folder exists.
 

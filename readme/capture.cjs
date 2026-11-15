@@ -1,5 +1,5 @@
-// node readme/capture.cjs <ci-sight checkout> : screenshots of the real dashboard, its API answered from demo-data.json, into readme/inputs/
-const { spawn } = require('child_process');
+// node readme/capture.cjs <ci-sight checkout> : builds the real dashboard and screenshots it, its API answered from demo-data.json, into readme/inputs/
+const { execFileSync, spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const { chromium, checkout } = require('../lib.cjs');
@@ -51,12 +51,15 @@ async function waitForServer() {
     try { if ((await fetch(BASE)).ok) return; } catch {}
     await new Promise(r => setTimeout(r, 500));
   }
-  throw new Error('Vite dev server did not start');
+  throw new Error('Vite preview server did not start');
 }
 
 (async () => {
-  const vite = spawn(process.execPath, [path.join(repo, 'client/node_modules/vite/bin/vite.js'), '--port', String(PORT), '--strictPort'],
-    { cwd: path.join(repo, 'client'), stdio: 'ignore' });
+  // A production build: the dev server re-optimises dependencies on first load and reloads the page mid-capture.
+  const client = path.join(repo, 'client');
+  const viteBin = path.join(client, 'node_modules/vite/bin/vite.js');
+  execFileSync(process.execPath, [viteBin, 'build'], { cwd: client, stdio: 'ignore' });
+  const vite = spawn(process.execPath, [viteBin, 'preview', '--port', String(PORT), '--strictPort'], { cwd: client, stdio: 'ignore' });
   const browser = await chromium.launch();
   try {
     await waitForServer();
