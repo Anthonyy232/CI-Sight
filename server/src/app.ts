@@ -82,7 +82,7 @@ export async function createApp() {
     const clientDistPath = path.join(__dirname, '../../client/dist');
     app.use(express.static(clientDistPath));
     // SPA fallback: serve index.html for any non-API GET requests.
-    app.get('*', (req, res) => {
+    app.get('/{*splat}', (req, res) => {
       if (!req.path.startsWith('/api/')) {
         res.sendFile(path.join(clientDistPath, 'index.html'));
       } else {
