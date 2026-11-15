@@ -49,7 +49,7 @@ export function ProjectPage() {
       </Anchor>
 
       <Stack gap="lg">
-        <Grid gutter="md" align="stretch">
+        <Grid gap="md" align="stretch">
           <Grid.Col span={{ base: 12, md: 6, lg: 4 }}>
             <ProjectStatsCard projectId={projectId!} />
           </Grid.Col>

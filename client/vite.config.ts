@@ -6,9 +6,7 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          mantine: ['@mantine/core', '@mantine/hooks', '@mantine/notifications'],
-        },
+        manualChunks: id => (id.includes('/node_modules/@mantine/') ? 'mantine' : undefined),
       },
     },
   },

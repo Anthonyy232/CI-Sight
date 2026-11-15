@@ -11,7 +11,7 @@ import {RepositoryHealthCard} from './RepositoryHealthCard';
 export function DashboardPage() {
   return (
     <Stack gap="lg">
-      <Grid gutter="md" align="stretch">
+      <Grid gap="md" align="stretch">
         <Grid.Col span={{ base: 12, md: 6, lg: 3 }}>
           <ProjectOverviewCard />
         </Grid.Col>
@@ -26,7 +26,7 @@ export function DashboardPage() {
         </Grid.Col>
       </Grid>
 
-      <Grid gutter="md" align="stretch">
+      <Grid gap="md" align="stretch">
         <Grid.Col span={{ base: 12, lg: 8 }}>
           <RecentActivityCard />
         </Grid.Col>
